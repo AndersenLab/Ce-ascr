@@ -1,0 +1,96 @@
+strain,latitude,longitude,landscape,substrate,sampled_by,isolation_date
+BRC20067,24.072954,121.169736,NA,Fruit,J. Wang,2012-01-13
+CB4856,21.33,-157.86,Rural garden,Fruit,L. Hollen,1972-08-01
+CB4932,51.02,-3.1,Rural garden,Fungus,P. Grewal,1991-01-01
+CX11254,34.130138,-118.114835,Botanical garden zoo,Soil,A. Sivasundar,2003-09-01
+CX11264,34.130138,-118.114835,Botanical garden zoo,Soil,A. Sivasundar,2003-09-01
+CX11271,34.13712,-118.12532,Urban garden,Soil,A. Sivasundar,2003-09-01
+CX11276,34.20111,-118.21198,Botanical garden zoo,Soil,A. Sivasundar,2003-09-01
+CX11285,34.14331,-118.05496,Botanical garden zoo,Soil,A. Sivasundar,2003-09-01
+CX11292,34.13531,-118.30582,Urban garden,Soil,A. Sivasundar,2004-02-01
+CX11314,34.12946,-118.10987,Urban garden,Soil,A. Sivasundar,2003-09-01
+DL226,44.5633,-123.2821,Urban garden,Soil,C. Hilburn,2008-01-01
+DL238,19.11,-155.81,Forest,Leaf litter,J. Knapp,2008-07-15
+ECA36,-36.893333,174.745529,Urban garden,Leaf litter,I. Ly,2013-07-27
+ED3005,55.94,-3.36,Urban garden,Compost,A. Cutter,2004-10-25
+ED3011,55.92,-3.19,Urban garden,Compost,A. Cutter,2004-11-11
+ED3012,55.92,-3.19,Urban garden,Compost,A. Cutter,2004-11-26
+ED3017,55.92,-3.19,Urban garden,Compost,A. Cutter,2004-12-03
+ED3046,-33.366667,19.316667,Urban garden,Compost,E. Dolgin,2006-05-05
+ED3048,-33.366667,19.316667,Urban garden,Compost,E. Dolgin,2006-04-02
+ED3049,-33.366667,19.316667,Urban garden,Compost,E. Dolgin,2006-04-02
+ED3052,-33.366667,19.316667,Urban garden,Compost,E. Dolgin,2006-05-05
+ED3073,-1.083333,36.65,Agricultural land,Compost,E. Dolgin,2006-05-17
+ED3077,-1.316667,36.8,Botanical garden zoo,Leaf litter,E. Dolgin,2006-05-17
+EG4347,44.04789,-123.07108,Urban garden,Rotting fruit,M. Ailion,2006-10-09
+EG4349,40.771467,-111.87316,Agricultural land,Rotting fruit,M. Ailion,2006-10-02
+EG4725,41.6288,-8.3476,Agricultural land,Rotting fruit,M. Ailion,2007-03-28
+GXW1,30.542889,114.419828,Urban garden,Rotting fruit,G. Wang,2010-11-05
+JT11398,47.763944,-122.275484,Urban garden,Compost,J. Kemner,2003-12-01
+JU1172,-36.87,-73.04,Urban garden,Compost,M.-A. Félix,2007-04-01
+JU1200,55.577,-4.6,Rural garden,Compost,T. Page,2007-08-01
+JU1242,49.1269,1.9595,Rural garden,Slug,M.-A. Félix,2007-10-14
+JU1246,49.12618,1.96152,Agricultural land,Rotting fruit,M.-A. Félix,2007-10-14
+JU1395,47.2199,0.04619,Agricultural land,Compost,M.-A. Félix,2008-03-01
+JU1400,37.3845,-5.988,Rural garden,Rotting fruit,M.-A. Félix,2008-03-29
+JU1409,37.468,-5.637,Rural garden,Rotting fruit,M.-A. Félix,2008-03-31
+JU1491,46.63,1.06,Forest,Rotting stem,M.-A. Félix,2008-08-17
+JU1530,48.7015,2.1725,Rural garden,Rotting fruit,M.-A. Félix,2008-09-09
+JU1568,48.8092,2.3862,Urban garden,Rotting stem,M.-A. Félix,2008-10-05
+JU1581,48.7015,2.1725,Rural garden,Rotting fruit,M.-A. Félix,2008-10-23
+JU1586,46.63,1.06,Rural garden,Rotting fruit,M.-A. Félix,2008-11-03
+JU1652,-34.86,-56.19,Urban garden,Compost,R. Giordano,2009-01-01
+JU1793,49.12604,1.95114,Forest,Rotting stem,M.-A. Félix,2009-10-10
+JU1896,37.999722,23.749673,Urban garden,Rotting fruit,M. Barkoulas,2010-01-02
+JU2001,-21.1,55.5,Forest,Rotting flower,T. Bélicard,2010-09-01
+JU2007,50.7608,-1.32413,Rural garden,Rotting fruit,M. Barkoulas,2010-10-16
+JU2316,38.7175,-9.1486,Botanical garden zoo,Rotting fruit,M.-A. Félix,2013-08-25
+JU2464,-13.155,-72.525,NA,Rotting fruit,L. Lokmane,2013-01-01
+JU2466,-13.257,-72.266,NA,Rotting fruit,L. Lokmane,2013-01-01
+JU258,32.73,-16.89,Agricultural land,Soil,M.-A. Félix,2001-10-01
+JU310,46.63,1.06,Rural garden,Compost,M.-A. Félix,2002-08-25
+JU323,44.42,4.4,Rural garden,NA,M.-A. Félix,2002-09-08
+JU346,44.42,4.4,Rural garden,Isopod,M.-A. Félix,2002-09-08
+JU360,48.98,2.23,Urban garden,Compost,C. Pieau,2002-09-16
+JU367,48.98,2.23,Urban garden,Compost,C. Pieau,2002-09-16
+JU393,49.28,-0.32,Rural garden,Compost,A. Barrière,2002-09-01
+JU394,49.28,-0.32,Rural garden,Compost,A. Barrière,2002-09-01
+JU397,49.28,-0.32,Rural garden,Compost,A. Barrière,2002-09-01
+JU406,49.28,-0.32,Rural garden,Compost,A. Barrière,2002-12-30
+JU440,48.715,1.56,Rural garden,Compost,D. Baïlle,2003-09-12
+JU642,48.84,2.5,Urban garden,Compost,J.-A. Lepesant,2004-12-14
+JU774,38.683,-9.34,Urban garden,Compost,M.-A. Félix,2005-07-10
+JU775,38.7175,-9.1486,Botanical garden zoo,Rotting fruit,M.-A. Félix,2005-07-10
+JU778,38.719,-9.1491,Botanical garden zoo,Rotting fruit,M.-A. Félix,2005-07-10
+JU847,48.46,7.461,Agricultural land,Compost,M.-A. Félix,2005-10-03
+KR314,49.28,-123.13,Urban garden,Rotting fruit,F. Dill,1984-05-01
+LKC34,-18,46,NA,Rotting nut,V. Stowell,2005-06-17
+MY1,52.54,7.31,Urban garden,Compost,H. Schulenburg,2002-07-01
+MY10,51.96,7.53,Urban garden,Compost,H. Schulenburg,2002-07-01
+MY16,51.93,7.57,Urban garden,Compost,H. Schulenburg,2002-07-01
+MY23,51.96,7.53,Urban garden,Compost,H. Schulenburg,2002-07-01
+N2,51.45,-2.59,Urban garden,Compost,W. Nicholas,1951-01-01
+NIC1,43.279,5.3543,NA,Rotting fruit,C. Braendle,2008-09-14
+NIC166,46.72722,6.89775,Rural garden,Fruit,C. Braendle,2007-07-27
+NIC199,37.745428,-25.19929,Rural garden,Nut,D. Bourc’his and J. Dumont,2011-03-09
+NIC2,43.279,5.3543,Urban garden,Rotting plant,C. Braendle,2008-09-14
+NIC207,43.720505,7.24045,Rural garden,Rotting fruit,C. Braendle,2011-09-21
+NIC231,43.720505,7.24045,Rural garden,Rotting fruit,C. Braendle,2011-11-14
+NIC236,39.242006,-9.313417,Rural garden,Rotting fruit,C. Braendle,2011-11-26
+NIC256,38.71829,-9.14875,Botanical garden zoo,Fruit,C. Braendle,2012-12-02
+NIC267,38.69237,-9.31592,Urban garden,Fruit,C. Braendle,2012-12-07
+NIC3,43.3636,5.3215,NA,Fruit,C. Braendle,2008-09-28
+PS2025,34.19,-118.13,Urban garden,NA,J. DeModena,NA
+QG536,37.7679,-122.4415,Urban garden,Fruit,M. Rockman,2010-12-30
+QG556,34.421629,-119.702021,NA,Rotting fruit,A. Paaby,2011-06-27
+QG557,34.421629,-119.702021,NA,Rotting fruit,A. Paaby,2011-06-27
+QX1212,37.7502,-122.4331,Urban garden,Rotting fruit,M. Rockman,2007-11-26
+QX1233,37.8804,-122.2838,Urban garden,Compost,M. Rockman,2007-11-24
+QX1791,20.6344,-156.3935,Forest,Rotting bark,E. Andersen,2011-01-27
+QX1792,20.70554,-156.35475,Rural garden,Rotting fruit,E. Andersen,2011-01-28
+QX1793,20.70559,-156.35678,Rural garden,Compost,E. Andersen,2011-01-28
+QX1794,20.70559,-156.35678,Rural garden,Compost,E. Andersen,2011-01-28
+RC301,47.99,7.84,Urban garden,Compost,R. Cassada,1983-01-01
+WN2001,51.954422,6.303406,NA,Compost,J. Riksen,2008-06-26
+PB306,NA,NA,NA,Isopod,S. Baird,1998-11-28
+PB303,NA,NA,NA,Isopod,S. Baird,1998-11-14
