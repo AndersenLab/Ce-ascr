@@ -1,0 +1,882 @@
+---
+title: "Plots_v1"
+author: "Daehan Lee"
+date: "2/24/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, warning=FALSE, message =FALSE}
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(readr)
+library(ggrepel)
+library(ggcorrplot)
+library(picante)
+library(qgraph)
+library(ggnewscale)
+library(ggtree)
+
+setwd(glue::glue("{dirname(rstudioapi::getActiveDocumentContext()$path)}/.."))
+load("Processed_Data/LD_a3a5.RData")
+load("Processed_Data/df_ascr_data_norm_h2.RData")
+load("Processed_Data/strain_geo.RData")
+load("Processed_Data/tree.RData")
+load("Processed_Data/df_PCA.RData")
+load("Processed_Data/df_qtl_peaks.RData")
+load("Processed_Data/mecr1_a3a5_fine.RData")
+load("Processed_Data/pod2_a3a5_fine.RData")
+load("Processed_Data/df_ratio_mecr1_ve.RData")
+load("Processed_Data/df_ratio_mecr1_edit.RData")
+load("Processed_Data/LD_a3a5.RData")
+load("Processed_Data/df_ratio_pod2_ve.RData")
+load("Processed_Data/df_ratio_double_edit.RData")
+
+##### Figure 2 #####
+
+### Fig. 2a Cladogram ###
+
+plot_tree_NJ_geo <- ggtree(tree_ph_geo, branch.length="none") + 
+  aes(color = label, size = label) + 
+  theme(legend.position = 'bottom', 
+        legend.title = element_blank(), 
+        legend.text = element_text(size=9, color = "black"),
+        legend.direction = "horizontal", 
+        legend.key.width = unit(0.1,"in"),
+        legend.key.height = unit(0.1,"in"),
+        plot.margin = margin(b=0.28, l=0, r=0, t=0.3, unit = "in")) +
+  #theme(legend.position = 'none', legend.text = element_text(size = 10), legend.title = element_blank(), plot.margin = margin(b=-8, l=-10, r=-6, t=-10, unit = "in")) +
+  scale_color_manual(values = c(geo.colours, "Z_link"="gray")) + 
+  guides(col= guide_legend(ncol=2))  +
+  scale_size_manual(values=c(.3,.3,.3,.3,.3,.3,.3,.3,.3,.3,.3,.3,.3,.3,.2))
+
+plot_tree_NJ_geo
+
+### Fig. 2b heatmap ###
+
+df_tree_rename <- df_tree %>%
+  dplyr::select(strain=label, order=y) %>%
+  dplyr::mutate(strain = ifelse(strain == "ECA259", "PB306", strain)) %>%
+  dplyr::mutate(strain = ifelse(strain == "JU1580", "JU1793", strain))
+
+df_tree_rename$strain[!df_tree_rename$strain %in% pheno_strains_YA]
+
+plot_heatmap_ascrfrac <- ascr_YA_frac %>%
+  dplyr::filter(strain != "JU1400") %>%
+  dplyr::left_join(., df_ascr_group, by = 'feature') %>%
+  dplyr::left_join(., df_tree_rename, by= "strain") %>%
+  ggplot(.) +
+  geom_tile() +
+  aes(x=feature, y=reorder(strain,order) , fill=log2(ascr_fraction)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size= 9, angle = 90, vjust = 0.5, hjust=1, color='black'), 
+        axis.text.y = element_text(size= 7.5, color='black'), 
+        axis.title=element_blank(), 
+        legend.position = 'bottom',
+        legend.key.width = unit(0.3,"in"),
+        legend.key.height = unit(0.1,"in"),
+        legend.text = element_text(size=8, color='black'),
+        legend.title = element_text(size=8.5, color='black'),
+        panel.spacing = unit(0.07, 'line'),
+        strip.text = element_text(size=8, color='black')) +
+  scale_fill_gradient(low = "black", high = "turquoise") +
+  facet_grid(~group1, scale='free', space='free') +
+  labs(fill="log2 (Relative abundance)")
+
+plot_heatmap_ascrfrac
+
+Fig2_1 <- cowplot::plot_grid(plot_tree_NJ_geo, plot_heatmap_ascrfrac, ncol=2, rel_widths = c(1,3), labels = c("a","b"),
+                           label_size = 12)
+
+
+### Fig. 2c - boxplots for all 42 features ###
+
+plot_ascr_pop <- ascr_YA_frac %>%
+  dplyr::filter(strain != "JU1400") %>%
+  dplyr::left_join(., df_ascr_group, by = 'feature') %>%
+  ggplot(.) +
+  geom_boxplot(outlier.alpha = 0.5, outlier.size = 0.5) +
+  aes(x=reorder(feature, -ascr_fraction, FUN=median), y=ascr_fraction*100, fill= group1) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size= 9.5, angle = 90, vjust = 0.5, hjust=1, color='black'), 
+        axis.text.y = element_text(size=9.5, color='black'),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 10, color='black'),
+        panel.grid = element_blank(),
+        legend.position =c(0.8,0.7),
+        legend.title = element_blank(),
+        legend.text = element_text(size=9, color='black'),
+        legend.key.width = unit(0.1,"in"),
+        legend.key.height = unit(0.2,"in")) +
+  labs(y="log10(Relative quantity (%))") +
+  #scale_y_continuous(trans='log10', breaks = c(10, 0.1, 0.001), labels = comma) +
+  scale_fill_manual(values = group_pal) +
+  guides(fill= guide_legend(ncol=2)) +
+  labs(y="Relative abundance (%)")
+
+plot_ascr_pop
+
+ggsave(plot_ascr_pop, file = "Plots/plot_ascr_pop.png", width = 7.5, height = 3)
+
+plot_ascr_pop_log <- ascr_YA_frac %>%
+  dplyr::filter(strain != "JU1400") %>%
+  dplyr::left_join(., df_ascr_group, by = 'feature') %>%
+  ggplot(.) +
+  geom_boxplot(outlier.alpha = 0.5, outlier.size = 0.5) +
+  aes(x=reorder(feature, -ascr_fraction, FUN=median), y=log2(ascr_fraction), fill= group1) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size= 9, angle = 90, vjust = 0.5, hjust=1, color='black'), 
+        axis.text.y = element_text(size=9, color='black'),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 10, color='black'),
+        panel.grid = element_blank(),
+        legend.position =c(0.73,0.87),
+        legend.title = element_blank(),
+        legend.text = element_text(size=8, color='black'),
+        legend.key.width = unit(0.1,"in"),
+        legend.key.height = unit(0.2,"in"),
+        legend.background = element_blank()) +
+  #scale_y_continuous(trans='log10', breaks = c(10, 0.1, 0.001), labels = comma) +
+  scale_fill_manual(values = group_pal) +
+  guides(fill= guide_legend(ncol=3)) +
+  labs(y="log2(Relative abundance)")
+
+plot_ascr_pop_log
+
+### Fig. 2d,e - examples, icas#9, ascr#11 ###
+
+plot_icas9 <- ascr_YA_frac %>%
+    dplyr::filter(feature == "icas#9") %>%
+    dplyr::filter(strain != "JU1400") %>%
+    ggplot(.) +
+    geom_col() +
+    aes(x=reorder(strain, -ascr_fraction), y=ascr_fraction*100) +
+    theme_bw() +
+    theme(axis.text.x = element_blank(), 
+          axis.text.y = element_text(size= 7.5, color='black'), 
+          axis.title.y = element_text(size= 9, color='black'), 
+          axis.title.x=element_blank(),
+          panel.grid = element_blank()) +
+    labs(y="Relative abundance (%)")
+
+plot_icas9
+
+plot_ascr11 <- ascr_YA_frac %>%
+    dplyr::filter(feature == "ascr#11") %>%
+    dplyr::filter(strain != "JU1400") %>%
+    ggplot(.) +
+    geom_col() +
+    aes(x=reorder(strain, -ascr_fraction), y=ascr_fraction*100) +
+    theme_bw() +
+    theme(axis.text.x = element_blank(), 
+          axis.text.y = element_text(size= 7.5, color='black'), 
+          axis.title = element_text(size= 9, color='black'),
+          panel.grid = element_blank()) +
+    labs(y="Relative abundance (%)", x="94 wild C. elegans strains")
+
+plot_ascr11
+  
+Fig2_2 <- cowplot::plot_grid(plot_ascr_pop_log, plot_icas9, plot_ascr11, NULL, ncol=1, 
+                           labels = c("c","d", "e"),
+                           label_size = 12, rel_heights = c(3,2,2,0.3), align='v')
+
+Fig2 <- cowplot::plot_grid(Fig2_1, Fig2_2, rel_widths = c(4,3))
+
+ggsave(Fig2, file = "Plots/Main/Fig2_ascr_name_fixed.pdf", width = 13, height = 9.5)
+
+### Supplementary Fig. 2 ###
+
+FigS2 <- ascr_YA_frac %>%
+    dplyr::filter(!feature %in% c("icas#9", "ascr#11")) %>%
+    dplyr::filter(strain != "JU1400") %>%
+  dplyr::arrange(feature, -ascr_fraction) %>%
+  dplyr::mutate(order = row_number()) %>%
+    ggplot(.) +
+    geom_col() +
+    aes(x=order, y=ascr_fraction*100) +
+    theme_bw() +
+    theme(axis.text.x = element_blank(), 
+          axis.text.y = element_text(size= 10, color='black'), 
+          axis.title = element_text(size= 11, color='black'),
+          panel.grid = element_blank()) +
+    labs(y="Relative abundance (%)", x="94 wild C. elegans strains") +
+  facet_wrap(~feature, ncol=6, scales='free')
+
+ggsave(FigS2, file = "Plots/Supplementary/Fig2.png", width = 9, height = 11)
+
+##### Figure 3 - Heritability, cor, networkPCA #####
+
+### Fig. 3a CV and h2 ###
+
+plot_cn_h2 <- df_ascr_YA_frac_summary %>%
+  dplyr::left_join(., df_ascr_group, by = 'feature') %>%
+  ggplot(.) +
+  geom_point(alpha=0.7, shape=21, size=2) +
+  aes(x=carbons, y=as.numeric(h2)*100, fill=group1) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size=9, color='black'),
+        axis.title = element_text(size=10, color='black'),
+        legend.title = element_blank(),
+        legend.key.width = unit(0.1,"in"),
+        legend.key.height = unit(0.1,"in"),
+        legend.position='bottom',
+        legend.background = element_blank(),
+        legend.text = element_text(size=8.5, color='black')) +
+  geom_hline(yintercept = 10, color='blue', linetype = 2, alpha=0.7) +
+  labs(x="FA length (Cn)", y="Narrow-sense\nheritability (%)") +
+  scale_fill_manual(values = group_pal)
+
+plot_cn_h2
+
+### Fig. 3b cor heatmap ###
+
+test_result_YA_h2_filtered <- cor.table(df_YA_pheno_wide_h2_filtered, cor.method="spearman")[[1]]
+
+## corr heatmap
+
+plot_corr_h2_filtered <- ggcorrplot(test_result_YA_h2_filtered, hc.order = TRUE, tl.srt = 90, type = "lower", legend.title = "Correlation\n(Rho)\n") +
+  theme(axis.text.x = element_text(size=9, color='black', vjust=0.6, hjust = 1),
+        axis.text.y = element_text(size=9, color='black'),
+        legend.position = c(0.22,0.75),
+        legend.key.width = unit(0.1,"in"),
+        legend.key.height = unit(0.1,"in"),
+        legend.text = element_text(size=9),
+        legend.title = element_text(size=9, color='black'),
+        panel.grid=element_blank()) +
+  scale_y_discrete(position = "right")
+
+plot_corr_h2_filtered
+
+### Fig. 3c ascr#3 vs ascr#5 ###
+
+df_ascr3_ascr5 <- data.frame(strain=row.names(df_YA_pheno_wide_h2_filtered),
+                             ascr.3=df_YA_pheno_wide_h2_filtered[,"ascr#3"], ascr.5=df_YA_pheno_wide_h2_filtered[,"ascr#5"])
+
+plot_ascr3_ascr5_scatter <- df_ascr3_ascr5 %>%
+  ggplot(.) +
+  geom_point(alpha=0.7, size =0.7) +
+  geom_text_repel(data = dplyr::filter(df_ascr3_ascr5, strain %in% c("NIC166","ED3052","JU258","JU1242")), 
+                   aes(label = strain), size = 2.3, nudge_x = -0.1) +
+  geom_text_repel(data = dplyr::filter(df_ascr3_ascr5, strain %in% c("NIC256","LKC34")), 
+                   aes(label = strain), size = 2.3, nudge_y = 0.1) +
+  aes(x=ascr.3, y=ascr.5) +
+  theme_bw() +
+  labs(x="ascr#3", y="ascr#5") +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size=9, color='black'),
+        axis.title = element_text(size=10, color='black'))
+
+plot_ascr3_ascr5_scatter
+
+### Fig. 3d PC1 x PC2 ###
+
+plot_PC12_YA_h2_filtered <- df_YA_ascrfrac_PC_traits_h2_filtered %>%
+  ggplot(.) +
+  geom_text_repel(data = dplyr::filter(df_YA_ascrfrac_PC_traits_h2_filtered, strain %in% c("N2", "EG4349")), 
+                   aes(label = strain), size = 2.5, nudge_y = -1) +
+  geom_text_repel(data = dplyr::filter(df_YA_ascrfrac_PC_traits_h2_filtered, PC1 > 7 | PC2 < -5), 
+                   aes(label = strain), size = 2.5, nudge_y = 1) +
+  geom_point(size = .8, alpha = 0.7) +
+  aes(x=PC1, y=PC2) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 9, color = 'black'),
+        axis.title = element_text(size = 10, color = 'black'),
+        panel.grid = element_blank()) +
+  labs(x="PC1 (32.3%)", y="PC2 (13.6%)")
+
+plot_PC12_YA_h2_filtered
+
+### Fig. 3e PC1 loadings ###
+
+plot_YA_PC1_loading2_h2_filtered <- df_YA_ascrfrac_PC_loading_h2_filtered %>%
+  dplyr::filter(PC == "PC1") %>%
+  dplyr::left_join(., df_ascr_group, by='feature') %>%
+  ggplot(.) +
+  geom_col(color='black', size=0.1) +
+  aes(x=reorder(feature, loading), y=loading, fill=group1) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=9, color='black'),
+        axis.text.y = element_text(size=9, color='black'),
+        axis.title.y = element_text(size=10, color='black'),
+        axis.title.x=element_blank(),
+        panel.grid=element_blank(),
+        legend.key.width = unit(0.1,"in"),
+        legend.key.height = unit(0.1,"in"),
+        legend.position=c(0.7, 0.25),
+        legend.title = element_blank(),
+        legend.text =  element_text(size=8.5, color='black'),
+        legend.background = element_blank(),
+        plot.title = element_text(size=10, color='black')) +
+  guides(fill= guide_legend(nrow=4)) +
+  scale_fill_manual(values = c("#9E0142", "#F46D43", "#FDAE61", "#FEE08B", "#A6761D", "#666666", "#3288BD", "#5E4FA2")) +
+  #scale_fill_manual(values = c("#9E0142", "#FDAE61", "#A6761D", "#666666", "#3288BD", "#5E4FA2")) +
+  ggtitle("PC1 (32.3%)")
+
+plot_YA_PC1_loading2_h2_filtered
+
+### Fig. 3f Piecharts for N2, ED3052, JU2007, JU1242 ###
+
+ascr_YA_frac_select <- ascr_YA_frac %>%
+  dplyr::filter(strain %in% c("N2","ED3052", "EG4349","JU1242")) %>%
+  dplyr::left_join(., df_ascr_group, by='feature') %>%
+  dplyr::group_by(group1, strain) %>%
+  dplyr::summarise(group_fraction = sum(ascr_fraction)) %>%
+  dplyr::ungroup()
+
+ascr_YA_frac_select$strain <- factor(ascr_YA_frac_select$strain, levels = c("N2","ED3052", "EG4349","JU1242"))
+
+plot_4strains_pie <- ascr_YA_frac_select %>%
+  ggplot(.) +
+  geom_col(color= 'black', size = 0.1) +
+  aes(x="", y=group_fraction, fill=group1) +
+  #geom_label(data = dplyr::filter(ascr_YA_frac_select, ascr_fraction >= 0.05), aes(label = group2), size = 2) +
+  coord_polar("y", start=0) +
+  facet_grid(~strain) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position = 'bottom',
+        legend.title = element_blank(),
+        legend.key.size = unit(0.1,"in"),
+        legend.text = element_text(size=8, color='black'),
+        panel.spacing = unit(0.1, "lines")) +
+  scale_fill_manual(values = group_pal) +
+  guides(fill= guide_legend(nrow=2))
+
+plot_4strains_pie
+
+ascr_YA_frac_h2_filtered <- ascr_YA_frac %>%
+  dplyr::filter(strain != "JU1400") %>%
+  dplyr::filter(feature %in% df_ascr_YA_frac_summary_high_h2$feature) %>%
+  dplyr::group_by(strain) %>%
+  dplyr::mutate(ascr_sum_h2_filtered = sum(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::distinct(strain, feature, abundance, .keep_all = T) %>%
+  dplyr::mutate(ascr_fraction_h2_filtered = abundance/ascr_sum_h2_filtered)
+
+plot_4strains_pie_h2_filtered <- ascr_YA_frac_h2_filtered %>%
+  dplyr::filter(strain %in% c("N2","ED3052", "EG4349","JU1242")) %>%
+  dplyr::left_join(., df_ascr_group, by='feature') %>%
+  ggplot(.) +
+  geom_col(color= 'black', size = 0.1) +
+  aes(x="", y=ascr_fraction_h2_filtered, fill=group1) +
+  #geom_label(data = dplyr::filter(ascr_YA_frac_select, ascr_fraction >= 0.05), aes(label = group2), size = 2) +
+  coord_polar("y", start=0) +
+  facet_grid(~factor(strain, levels=c("N2","ED3052", "EG4349","JU1242"))) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position = 'none',
+        legend.title = element_blank(),
+        legend.key.size = unit(0.1,"in"),
+        legend.text = element_text(size=8, color='black'),
+        panel.spacing = unit(0.1, "lines")) +
+  scale_fill_manual(values = group_pal) +
+  guides(fill= guide_legend(nrow=2))
+
+plot_4strains_pie_h2_filtered
+
+Fig3abcd <- cowplot::plot_grid(plot_cn_h2, plot_corr_h2_filtered, plot_ascr3_ascr5_scatter, plot_PC12_YA_h2_filtered,
+                              nrow=2, rel_widths = c(1,1), labels = c("a","b","c","d"),
+                           label_size = 12)
+
+Fig3e <- cowplot::plot_grid(plot_YA_PC1_loading2_h2_filtered, labels = c("e"),
+                           label_size = 12)
+
+Fig3f <- cowplot::plot_grid(plot_4strains_pie_h2_filtered,
+                               labels = c("f"),
+                           label_size = 12)
+
+Fig3 <- cowplot::plot_grid(Fig3abcd, Fig3e, Fig3f,
+                              ncol=1, rel_heights = c(2.7,1.2,1))
+
+Fig3
+
+ggsave(Fig3, file = "Plots/Main/Fig3_name_fixed.pdf", width = 5.5, height = 10)
+
+##### Fig. 4 mapping hotspot #####
+
+### Fig. 4a,b ascr#3:ascr#5 manplot, pxg ###
+
+plot_man_a3a5 <- qtl_a3a5 %>%
+  dplyr::distinct(CHROM, POS, trait, .keep_all=T) %>%
+  dplyr::filter(CHROM != "MtDNA") %>%
+  dplyr::mutate(QTL = ifelse(log10p >=eigen_BF_adjusted, "yes", "no")) %>%
+  ggplot(.) +
+  geom_rect(data=dplyr::filter(qtl_a3a5,CHROM != "MtDNA", log10p >=eigen_BF_adjusted),
+            aes(xmin = startPOS/1e6,    # this is the plot boundary for LD and gene plots
+                xmax = endPOS/1e6,    # this is the plot boundary for LD and gene plots
+                ymin = 0, 
+                ymax = Inf, 
+                fill = "blue"), 
+            color = "blue",fill = "cyan",linetype = 2, 
+            alpha=.2) +  
+  geom_point(alpha=0.7, aes(x=POS/1e6, y=log10p, fill=QTL), size = 1, shape=21) +
+  geom_rect(data=df_chr_length, aes(xmin =  start/1e6, xmax = stop/1e6, ymin = 7, ymax=8), 
+            color='transparent', fill='transparent', size =0.1) +
+  geom_hline(yintercept = eigen_BF_adjusted, color='darkgrey', alpha = 0.8, linetype=2) +
+  theme_bw() +
+  theme(panel.grid=element_blank(),
+        panel.spacing = unit(0.1, "lines"),
+        axis.text = element_text(size=10, color='black'),
+        axis.title = element_text(size=11, color='black'),
+        axis.text.x = element_blank(),
+        title = element_text(size=11, color='black'),
+        legend.position = 'none') +
+  facet_grid(~CHROM, scale='free_x', space = 'free') +
+  labs(x="Genomic position (Mb)", y="-log10(p)") +
+  ggtitle("ascr#3:ascr#5") +
+  scale_y_continuous(breaks = c(0,3,6,9,12)) +
+  scale_fill_manual(values=c("grey","red"))
+
+plot_man_a3a5
+
+strains.of.interest <- c("N2", "ED3052", "NIC256", "JU258", "LKC34","NIC166")
+
+plot_pxg_a3a5 <- qtl_a3a5 %>%
+  dplyr::filter(!is.na(peak_id), var.exp>0.3) %>%
+  dplyr::select(CHROM, marker, trait, startPOS, peakPOS, endPOS, AF1, value, strain, allele, peak_id) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(startPOS = startPOS/1000000,
+                peakPOS = peakPOS/1000000,
+                endPOS = endPOS/1000000) %>%
+  dplyr::mutate(allele = dplyr::case_when(allele == "-1" ~ "REF",
+                                          allele == "1" ~ "ALT",
+                                          TRUE ~ "NA"),
+                allele = factor(allele, levels = c("REF", "ALT"))) %>%
+  dplyr::filter(allele != "NA" | !is.na(allele)) %>%
+  dplyr::mutate(SOI = strain %in% strains.of.interest,
+                SOI.2 = if_else(SOI == TRUE, true = strain, false = "")) %>%
+  droplevels() %>%
+  dplyr::arrange(SOI.2) %>%
+  ggplot2::ggplot(mapping = aes(x = allele, y = value, text = SOI.2)) +
+  ggplot2::theme_bw(base_size = 12) +
+  ggplot2::geom_violin(aes(fill = allele), alpha = 0.8, scale = "count", draw_quantiles = c(0.25, 0.5, 0.75)) +
+  ggplot2::scale_fill_manual(values = c("#726E75","#720E07"), guide = FALSE) +
+  ggnewscale::new_scale("fill") +
+  ggplot2::geom_point(aes(fill = SOI), position = ggbeeswarm::position_beeswarm(), size = 1.5, shape = 21) +
+  # geom_point(aes(colour = sweep.share*100), size = 1.1, position = pos) +
+  ggplot2::scale_fill_manual(values = c("#9297C4","#D33E43"), guide = FALSE) +
+  # scale_colour_gradient(low = "black", high = "violetred", name = "Selective Sweep (% Chromosome)") +
+  ggrepel::geom_text_repel(aes(label = SOI.2),
+                           colour = "black", position = ggbeeswarm::position_beeswarm(), size=2.2) +
+  ggplot2::theme(legend.position = "bottom",
+                 axis.text = element_text(size=10, color='black'),
+                 axis.title.y = element_text(size=11, color='black'),
+                 axis.title.x = element_blank(),
+                 title = element_text(size=11, color='black')) +
+  ggplot2::labs(y = "ascr#3:ascr#5",
+                x = "Genotype") +
+  ggplot2::facet_grid(~factor(marker, levels=c("II:13692928","IV:6958736", "II:2429716", "X:148173")))
+
+plot_pxg_a3a5
+
+### Fig. 4c hotspot figure ###
+
+heri_features <- unique(df_ascr_YA_frac_summary_high_h2$feature)
+save(heri_features, file="Processed_Data/heri_features.RData")
+df_qtl_bonferroni_peaks$trait <- gsub("\\_", "\\#", df_qtl_bonferroni_peaks$trait)
+  
+plot_hotspot <- df_qtl_bonferroni_peaks %>%
+  dplyr::filter(CHROM != "MtDNA") %>%
+  dplyr::filter(trait %in% heri_features | trait == "a3a5") %>%
+  dplyr::mutate(trait=ifelse(trait =="a3a5", "ascr#3:\nascr#5", trait)) %>%
+  ggplot(.) +
+  geom_rect(aes(xmin = peakPOS/1e6,    # this is the plot boundary for LD and gene plots
+                xmax = peakPOS/1e6,    # this is the plot boundary for LD and gene plots
+                ymin = 0, 
+                ymax = Inf), color = 'red') +
+  geom_rect(aes(xmin = startPOS/1e6,    
+                  xmax = endPOS/1e6,    
+                  ymin = 0, 
+                  ymax = Inf), alpha=0.2) +
+  geom_rect(data=df_chr_length, aes(xmin =  start/1e6, xmax = stop/1e6, ymin = 0.2, ymax=0.3), 
+            color='transparent', fill='transparent', size =0.1) +
+  theme_bw() +
+  theme(panel.spacing = unit(0.1, "lines"),
+        panel.grid = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        strip.text.y=element_text(size=9, color = "black", angle = 90),  
+        strip.text.y.left = element_text(angle=0),
+        #strip.background = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title = element_text(size=11, color='black')) +
+  facet_grid(trait~CHROM, scales = 'free', space = 'free', switch = 'y') +
+  xlab("Genomic position (Mb)")
+
+plot_hotspot
+
+Fig4 <- cowplot::plot_grid(plot_man_a3a5, plot_pxg_a3a5, plot_hotspot,
+                              ncol=1, rel_heights = c(1,0.8,2), labels = c("a","b","c"),
+                           label_size = 12, align = "v", axis='lr')
+
+Fig4
+
+ggsave(Fig5, file = "Plots/Main/Fig4.pdf", width = 7.5, height = 12)
+
+##### Fig. 5 Fine mapping of mecr-1 #####
+
+### Fig.5a - fine mapping of a3 or a5, 6b - pxg for mecr-1 to a3, a5, a3:a5, 6c - mecr-1 association for all pairwise ratio for 16 compounds ###
+
+### Fig. 5a mecr-1 fine mapping ###
+
+plot_fine_mecr <- df_a3a5_mecr1 %>%
+  dplyr::mutate(VARIANT_IMPACT=ifelse(is.na(VARIANT_IMPACT), "Unknown", VARIANT_IMPACT)) %>%
+  arrange(desc(VARIANT_IMPACT)) %>%
+  ggplot(.) +
+  geom_vline(xintercept = 13692928/1e6, color='black', alpha = 0.5, linetype=2) +
+  geom_vline(xintercept = 13185987/1e6, color='red', alpha = 0.5, linetype=2) +
+  geom_vline(xintercept = 13187314/1e6, color='red', alpha = 0.5, linetype=2) +
+  geom_point(alpha=0.7, aes(x=POS/1e6, y=VARIANT_LOG10p, fill=VARIANT_IMPACT), size = 1.5, shape=21) +
+  theme_bw() +
+  theme(panel.grid=element_blank(),
+        axis.text = element_text(size=10, color='black'),
+        legend.text = element_text(size=10, color='black'),
+        axis.title = element_text(size=11, color='black'),
+        title = element_text(size=11, color='black'),
+        legend.title=element_blank(),
+        legend.background = element_blank(),
+        legend.position = 'none') +
+  scale_fill_manual(values=c("purple", "grey","grey", "grey")) +
+  scale_x_continuous(expand=c(0.01,0.01))+
+  labs(x="Genomic position (Mb)", y="-log10(p)") +
+  facet_grid(~CHROM)
+  
+### Fig. 5b mecr-1 genotype and bar plot ###
+
+mecr1_alt <- c("ED3052","JU258","JU2838","JU3144","JU3167","JU3169","LKC34","NIC1780","NIC1783","NIC1785","NIC1788",
+"NIC1789","NIC1794","NIC1796","NIC1798","NIC1799","NIC1802","NIC251","NIC256","NIC261","NIC271",
+"NIC274","QG2838","QG2843","QG2846","QG2854","QG2855","QG2857","QG2875","QG2932","WN2001",
+"NIC1782","NIC1790","NIC1792","QG4003","QG4006","QG4008","QG4021","QG4193")
+
+plot_ascr3_ascr5 <- df_GWA_fraction_YA %>%
+  dplyr::filter(strain != "JU1400") %>%
+  dplyr::select(strain, ascr.5, ascr.3) %>%
+  dplyr::mutate(a3a5=ascr.3/ascr.5, mecr1_gt = ifelse(strain %in% mecr1_alt, "ALT", "REF")) %>%
+    ggplot(.) +
+    geom_col() +
+    aes(x=reorder(strain, a3a5), y=a3a5, fill=factor(mecr1_gt, levels=c("REF","ALT"))) +
+    theme_bw() +
+    theme(axis.text.y = element_text(size= 7, color='black'), 
+          axis.text.x = element_text(size= 10, color='black'), 
+          axis.title.x = element_text(size= 11, color='black'), 
+          axis.title.y=element_blank(),
+          legend.title=element_text(size=11, color='black', face='italic'),
+          legend.text=element_text(size= 10, color='black'), 
+          legend.position = c(0.7,0.15),
+          legend.key.size = unit(0.15, "in"),
+          panel.grid = element_blank())+
+  scale_fill_manual(values = c("grey","red")) + 
+  coord_flip() +
+  labs(y="ascr#3 : ascr#5", fill="mecr-1") 
+
+plot_ascr3_ascr5
+
+### Fig. 5C association with pairwise ratio ###
+
+plot_mecr1_asso_ratio <-df_ratio_mecr1_ve %>%
+  ggplot(.) +
+  geom_tile(aes(x=feature1, y=feature2, fill=Variance_explained*100)) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size= 10, color='black'), 
+        axis.title = element_blank(), 
+        axis.text.x = element_text(size= 10, angle = 90, vjust = 0.5, hjust=1, color='black'), 
+        panel.grid = element_blank(),
+        legend.title=element_text(size= 10, color='black'),
+        legend.text=element_text(size= 10, color='black'),
+        legend.position='bottom',
+        legend.key.height = unit(0.1,"in")) +
+  scale_fill_gradient(low='white', high='blue') +
+  labs(fill="Variance\nexplained (%)")
+
+plot_mecr1_asso_ratio
+
+Fig5ac <- cowplot::plot_grid(plot_fine_mecr, plot_mecr1_asso_ratio,
+                              ncol=1, rel_heights = c(1,1.5), labels = c("a","c"),
+                           label_size = 12)
+
+Fig5b <- cowplot::plot_grid(plot_ascr3_ascr5, labels = c("b"),
+                           label_size = 12)
+
+Fig5 <- cowplot::plot_grid(Fig5ac, Fig5b,
+                              nrow=1, rel_widths =c(2,1.4))
+
+ggsave(Fig6, file = "Plots/Main/Fig5.pdf", width = 7.5, height = 8)
+
+ ##### Fig. 6 causality with mecr-1 #####
+
+plot_mecr1_a3a5 <- all_ratio_YA_mecr1 %>%
+  dplyr::filter(trait == "ascr#3_ascr#5") %>%
+  ggplot(.) +
+  geom_point(alpha=0.7) +
+  stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+               geom="pointrange", color="red", alpha = 0.5) +
+  #geom_dotplot(binaxis = 'y', stackdir = "center", position = "dodge", binwidth=0.00001) +
+  aes(x=factor(strain, levels=c("N2","E1","E2","ED","NIC"), labels=c("N2\n(159G)","ECA2818\n(159V)","ECA2834\n(159V)","ED3052","NIC256")), y=value) +
+  theme_bw() +
+  theme(panel.grid=element_blank(),
+        axis.text = element_text(size=10, color='black'),
+        axis.title = element_text(size=11, color='black')) +
+  labs(x="", y="ascr#3 : ascr#5")
+
+plot_mecr1_a3a5
+
+ggsave(plot_mecr1_a3a5, file = "Plots/Supplementary/FigS3_mecr1_a3a5.png", width = 5.5, height = 4)
+
+plot_mecr1_a5a18 <- all_ratio_YA_mecr1 %>%
+  dplyr::filter(trait == "ascr#5_ascr#18") %>%
+  ggplot(.) +
+  geom_point(alpha=0.7) +
+  stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+               geom="pointrange", color="red", alpha = 0.5) +
+  #geom_dotplot(binaxis = 'y', stackdir = "center", position = "dodge", binwidth=0.00001) +
+  aes(x=factor(strain, levels=c("N2","E1","E2","ED","NIC"), labels=c("N2\n(159G)","ECA(1)\n(159V)","ECA(2)\n(159V)","ED3052","NIC256")), y=value) +
+  theme_bw() +
+  theme(panel.grid=element_blank(),
+        axis.text = element_text(size=10, color='black'),
+        axis.title = element_text(size=11, color='black')) +
+  labs(x="", y="ascr#5 : ascr#18")
+
+plot_mecr1_a5a18
+
+plot_mecr1_a18a3 <- all_ratio_YA_mecr1 %>%
+  dplyr::filter(trait == "ascr#18_ascr#3") %>%
+  ggplot(.) +
+  geom_point(alpha=0.7) +
+  stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+               geom="pointrange", color="red", alpha = 0.5) +
+  #geom_dotplot(binaxis = 'y', stackdir = "center", position = "dodge", binwidth=0.00001) +
+  aes(x=factor(strain, levels=c("N2","E1","E2","ED","NIC"), labels=c("N2\n(159G)","ECA(1)\n(159V)","ECA(2)\n(159V)","ED3052","NIC256")), y=value) +
+  theme_bw() +
+  theme(panel.grid=element_blank(),
+        axis.text = element_text(size=10, color='black'),
+        axis.title = element_text(size=11, color='black')) +
+  labs(x="", y="ascr#18 : ascr#3")
+
+plot_mecr1_a18a3
+
+plot_mecr1_a1a3 <- all_ratio_YA_mecr1 %>%
+  dplyr::filter(trait == "ascr#1_ascr#3") %>%
+  ggplot(.) +
+  geom_point(alpha=0.7) +
+  stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+               geom="pointrange", color="red", alpha = 0.5) +
+  #geom_dotplot(binaxis = 'y', stackdir = "center", position = "dodge", binwidth=0.00001) +
+  aes(x=factor(strain, levels=c("N2","E1","E2","ED","NIC"), labels=c("N2\n(159G)","ECA(1)\n(159V)","ECA(2)\n(159V)","ED3052","NIC256")), y=value) +
+  theme_bw() +
+  theme(panel.grid=element_blank(),
+        axis.text = element_text(size=10, color='black'),
+        axis.title = element_text(size=11, color='black')) +
+  labs(x="", y="ascr#1 : ascr#3")
+
+plot_mecr1_a1a3
+
+Fig6 <- cowplot::plot_grid(plot_mecr1_a3a5, plot_mecr1_a5a18, 
+                           plot_mecr1_a18a3, plot_mecr1_a1a3,
+                           labels = c("a","b","c","d"),
+                           axis = "tblr", align="hv",ncol=2,
+                           label_size = 12)
+
+Fig6
+
+ggsave(Fig6, file = "Plots/Main/Fig6.png", width = 7.5, height = 6)
+
+### Supplementary Fig. 3 ###
+
+FigS3 <- all_ratio_YA_mecr1 %>%
+  dplyr::filter(trait %in% mecr1_sigs$trait) %>%
+  dplyr::filter(!trait %in% c("ascr#3_ascr#5", "ascr#5_ascr#18", "ascr#18_ascr#3","ascr#1_ascr#3")) %>%
+  ggplot(.) +
+  geom_point(alpha=0.7) +
+  stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+               geom="pointrange", color="red", alpha = 0.5) +
+  #geom_dotplot(binaxis = 'y', stackdir = "center", position = "dodge", binwidth=0.00001) +
+  aes(x=factor(strain, levels=c("N2","E1","E2","ED","NIC"), labels=c("N2\n(159G)","ECA(1)\n(159V)","ECA(2)\n(159V)","ED3052","NIC256")), y=value) +  theme_bw() +
+  theme(panel.grid=element_blank(),
+        axis.text = element_text(size=9, color='black'),
+        axis.title = element_text(size=10, color='black')) +
+  facet_wrap(~gsub("_", " : ", trait), scales = 'free', ncol=3) +
+  labs(x="")
+
+ggsave(FigS3, file = "Plots/Supplementary/FigS3.png", width = 9, height = 12)
+
+### Fig. S4 LD ###
+
+FigS4 <- ldcalc %>%
+    as.data.frame() %>%
+    dplyr::mutate(QTL1 = rownames(.),
+                  trait = TRAIT) %>%
+    tidyr::pivot_longer(cols = -c(QTL1, trait), names_to = "QTL2", values_to = "r2") %>%
+    dplyr::filter(!is.na(r2)) %>%
+    dplyr::select(QTL1, QTL2, everything()) %>%
+    ggplot(., mapping = aes(x = factor(QTL1, levels=c("II_2429716","II_13692928","IV_6958736","X_148173"), labels = c("II:2429716","II:13692928","IV:6958736","X:148173")), 
+                                       y = factor(QTL2, levels=c("II_2429716","II_13692928","IV_6958736","X_148173"), labels = c("II:2429716","II:13692928","IV:6958736","X:148173")))) + 
+    theme_classic() +
+    geom_tile(aes(fill = r2),colour = "black", size = 2) + 
+    geom_text(aes(label = round(r2, 4))) + 
+    scale_fill_gradient(low="darkgreen", high="red", limits = c(0, 1), name = expression(r^2)) + 
+    theme(axis.title = element_blank(),
+          axis.text = element_text(colour = "black")) 
+
+ggsave(FigS4, file = "Plots/Supplementary/FigS4.png", width = 5, height =4)
+
+### Fig. S5 pod-2 variance explained ###
+
+FigS5 <- df_ratio_pod2_ve %>%
+  ggplot(.) +
+  geom_tile(aes(x=feature1, y=feature2, fill=Variance_explained*100)) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size= 10, color='black'), 
+        axis.title = element_blank(), 
+        axis.text.x = element_text(size= 10, angle = 90, vjust = 0.5, hjust=1, color='black'), 
+        panel.grid = element_blank()) +
+  scale_fill_gradient(low='white', high='blue') +
+  labs(fill="Variance\nexplained (%)")
+
+ggsave(FigS5, file = "Plots/Supplementary/FigS5.png", width = 6, height =5)
+
+### Fig. 7 pod-2 ###
+
+##### Fig. 7 Fine mapping of pod-2 #####
+
+### Fig. 7a pod-2 fine mapping ###
+
+df_a3a5_pod2 <- read_tsv("Raw/Analysis_Results-20211021_ratio_outliers/Fine_Mappings/Data/a3a5_II_4512-2641359_bcsq_genes.tsv")
+
+plot_fine_pod <- df_a3a5_pod2 %>%
+ dplyr::mutate(VARIANT_IMPACT=ifelse(is.na(VARIANT_IMPACT), "Unknown", VARIANT_IMPACT)) %>%
+ arrange(desc(VARIANT_IMPACT)) %>%
+ ggplot(.) +
+ geom_vline(xintercept = 2429716/1e6, color='black', alpha = 0.5, linetype=2) +
+ geom_rect(aes(xmin = 1136784/1e6,    # this is the plot boundary for LD and gene plots
+               xmax = 1152701/1e6,    # this is the plot boundary for LD and gene plots
+               ymin = 0, 
+               ymax = Inf, 
+               fill = "blue"), 
+           color = "blue",fill = "cyan",linetype = 2, size=0.3,
+           alpha=.2) +
+ #geom_vline(xintercept = 1136784/1e6, color='brown', alpha = 0.5, linetype=2) +
+ #geom_vline(xintercept = 1152701/1e6, color='brown', alpha = 0.5, linetype=2) +
+ geom_point(alpha=0.7, aes(x=POS/1e6, y=VARIANT_LOG10p, fill=VARIANT_IMPACT), size = 1.5, shape=21) +
+ theme_bw() +
+ theme(panel.grid=element_blank(),
+       axis.text = element_text(size=10, color='black'),
+       legend.text = element_text(size=10, color='black'),
+       axis.title = element_text(size=11, color='black'),
+       title = element_text(size=11, color='black'),
+       legend.title=element_blank(),
+       legend.background = element_blank(),
+       legend.position = 'none') +
+ scale_fill_manual(values=c("purple", "grey","grey", "grey")) +
+ scale_x_continuous(expand=c(0.01,0.01))+
+ labs(x="Genomic position (Mb)", y="-log10(p)") +
+ facet_grid(~CHROM)
+
+ggsave(plot_fine_pod, file = "Plots/Main/Fig7a.png", width = 5, height =4)
+
+### Fig. 7b - mtFAS pathway ###
+
+### Fig. 7c mecr-1, pod-2 genotype and bar plot ###
+
+mecr1_alt <- c("ED3052","JU258","JU2838","JU3144","JU3167","JU3169","LKC34","NIC1780","NIC1783","NIC1785","NIC1788",
+"NIC1789","NIC1794","NIC1796","NIC1798","NIC1799","NIC1802","NIC251","NIC256","NIC261","NIC271",
+"NIC274","QG2838","QG2843","QG2846","QG2854","QG2855","QG2857","QG2875","QG2932","WN2001",
+"NIC1782","NIC1790","NIC1792","QG4003","QG4006","QG4008","QG4021","QG4193")
+
+pod2_alt <- c("ED3052","JU2001","JU258","NIC166","NIC199","NIC256","QG536")
+
+plot_ascr3_ascr5_mp <-df_GWA_fraction_YA %>%
+ dplyr::filter(strain != "JU1400") %>%
+ dplyr::select(strain, ascr.5, ascr.3) %>%
+ dplyr::mutate(a3a5=ascr.3/ascr.5, mecr1_gt = ifelse(strain %in% mecr1_alt, "ALT", "REF"),
+               pod2_gt = ifelse(strain %in% pod2_alt, "ALT", "REF")) %>%
+ dplyr::mutate(mecr1_pod2 = paste(mecr1_gt, pod2_gt, sep="_")) %>%
+ ggplot(.) +
+ geom_col() +
+ aes(x=reorder(strain, a3a5), y=a3a5, fill=factor(mecr1_pod2, levels=c("REF_REF","REF_ALT","ALT_REF", "ALT_ALT"))) +
+ theme_bw() +
+ theme(axis.text.y = element_text(size= 7, color='black'), 
+       axis.text.x = element_text(size= 10, color='black'), 
+       axis.title.x = element_text(size= 11, color='black'), 
+       axis.title.y=element_blank(),
+       legend.title=element_text(size=11, color='black', face='italic'),
+       legend.text=element_text(size= 10, color='black'), 
+       legend.position = c(0.7,0.25),
+       legend.key.size = unit(0.15, "in"),
+       panel.grid = element_blank())+
+ scale_fill_manual(values = c("grey","pink","orange","red")) + 
+ coord_flip() +
+ labs(y="ascr#3 : ascr#5", fill="mecr-1_pod-2") 
+
+plot_ascr3_ascr5_mp
+
+### Fig. 7d mecr-1, pod-2 double edit ###
+
+plot_mecrpod_a3a5 <- all_ratio_YA_mecrpod %>%
+ dplyr::filter(trait == "ascr#3_ascr#5") %>%
+ ggplot(.) +
+ geom_point(alpha=0.7) +
+ stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+              geom="pointrange", color="red", alpha = 0.5) +
+ #geom_dotplot(binaxis = 'y', stackdir = "center", position = "dodge", binwidth=0.00001) +
+ aes(x=factor(strain, levels=c("N2","ECA2818","ECA3130","ECA3131","ECA3128","ECA3129")), 
+     y=value,
+     color=factor(strain, levels=c("N2","ECA2818","ECA3130","ECA3131","ECA3128","ECA3129"))) +
+ theme_bw() +
+ theme(panel.grid=element_blank(),
+       axis.text = element_text(size=10, color='black'),
+       axis.title = element_text(size=11, color='black')) +
+ labs(x="", y="ascr#3 : ascr#5", color="")
+
+plot_mecrpod_a3a5
+
+Fig7abd <- cowplot::plot_grid(NULL, NULL, plot_mecrpod_a3a5,
+                             ncol=1, rel_heights = c(1,0.6,0.8), labels = c("a","c","d"),
+                          label_size = 12)
+
+Fig7c <- cowplot::plot_grid(plot_ascr3_ascr5_mp, labels = c("c"),
+                          label_size = 12)
+
+Fig7 <- cowplot::plot_grid(Fig7abd, Fig7c,
+                             nrow=1, rel_widths =c(2,1.4))
+
+ggsave(Fig7, file = "Plots/Main/Fig7'.pdf", width = 7.5, height = 8)
+
+
+#,               labels=c("N2","mecr-1(159V)","pod-2(1516Y)","pod-2(1516Y)","pod-2(1516Y) mecr-1(159V)","pod-2(1516Y) mecr-1(159V)")
+
+
+### Supplementary Table 1 - strain info ### - removed
+
+TableS1 <- indep_strain_info_geo %>%
+  dplyr::filter(strain %in% c(pheno_strains_YA, "JU1400", "ECA259")) %>%
+  dplyr::mutate(strain = ifelse(strain=="ECA259", "PB306", strain)) %>%
+  dplyr::select(strain, latitude = lat, longitude = long, landscape, substrate, sampled_by, isolation_date)
+
+write.csv(TableS1, "Manuscript/Initial_submission/Supplementary_Table/TableS1.csv",row.names = F, quote = F)
+
+
+### Supplementary Table 1 - QTL info ###
+
+write.csv(df_qtl_bonferroni_peaks, "Manuscript/Initial_submission/Supplementary_Table/TableS1_qtl.csv",row.names = F, quote = F)
+
+
+### Supplementary Data 1 - ascr fraction ###
+
+DataS1 <- ascr_YA_frac %>%
+  dplyr::select(strain, feature, fraction=ascr_fraction)
+
+write.csv(DataS1, file="Manuscript/Initial_submission/Supplementary_Data/DataS1.csv",  row.names = F)
+
+
+
+```

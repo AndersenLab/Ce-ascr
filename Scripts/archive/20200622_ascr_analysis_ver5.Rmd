@@ -1,0 +1,1810 @@
+---
+title: "20200622_ascr_analysis_ver4"
+author: "Daehan Lee"
+date: "2020/06/22"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, warning=FALSE, message=FALSE}
+
+install.packages("rio")
+install.packages("broom")
+install.packages("dbplyr")
+install.packages("lme4")
+install.packages("picante")
+install.packages("ggrepel")
+install.packages("lavaan")
+install.packages("qgraph")
+install.packages("ggpubr")
+
+install.packages("devtools")
+devtools::install_github("AndersenLab/cegwas")
+devtools::install_github("kassambara/ggcorrplot")
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(rio)
+library(broom)
+library(cegwas)
+library(dbplyr)
+library(lme4)
+library(picante)
+library(devtools)
+library(ggrepel)
+library(ggcorrplot)
+library(qgraph)
+library(ggpubr)
+library(sommer)
+library(ggfortify)
+
+# ascr analysis for mixed stage / synchronized YA
+
+ascr_YA <- read.csv(file="~/Dropbox/AndersenLab/LabFolders/PastMembers/Daehan/Manuscripts/Metoblites/Data/20190807_ascr_raw_YA.csv") %>%
+  dplyr::mutate(ascrtobpTIC = ascr_total/bpTIC) %>%
+  dplyr::arrange(ascrtobpTIC) %>%
+  tidyr::separate(strain, sep = " ", into = c("strain", 
+                "batch"), remove = F)  %>%
+  dplyr::filter(!strain %in% c("JU238", "JU363", "JU1581", "QG537", "QG538", "CX11400", "JU491", "QG1"))
+
+write.csv(unique(ascr_YA$strain), file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Collaboration/YH/ascr_strains.csv")
+
+ascr_mixed <- read.csv(file="~/Dropbox/AndersenLab/LabFolders/PastMembers/Daehan/Manuscripts/Metoblites/Data/20190807_ascr_raw_mixed.csv") %>%
+  dplyr::mutate(ascrtobpTIC = ascr_total/bpTIC) %>%
+  dplyr::arrange(ascrtobpTIC) %>%
+  tidyr::separate(strain, sep = " ", into = c("strain", 
+                "batch"), remove = F)  %>%
+  dplyr::filter(!strain %in% c("JU238", "JU363", "JU1581", "QG537", "QG538", "CX11400", "JU491", "QG1"))
+
+plot_cor_bpTIC_ascrsum_YA <- ascr_YA %>%
+  ggplot(.) +
+  geom_point() +
+  aes(x=bpTIC, y=ascr_total) +
+  theme_bw()
+
+plot_cor_bpTIC_ascrsum_YA
+
+cor(ascr_YA$bpTIC, ascr_YA$ascr_total, method='pearson')
+cor(ascr_YA$bpTIC, ascr_YA$ascr_total, method='spearman')
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_cor_bpTIC_ascrsum_YA.pdf", plot=plot_cor_bpTIC_ascrsum_YA, width = 7.5, height = 5, units = "in")
+
+plot_cor_bpTIC_ascrsum_mixed <- ascr_mixed %>%
+  ggplot(.) +
+  geom_point() +
+  aes(x=bpTIC, y=ascr_total) +
+  theme_bw()
+
+cor(ascr_mixed$bpTIC, ascr_mixed$ascr_total, method='pearson')
+cor(ascr_mixed$bpTIC, ascr_mixed$ascr_total, method='spearman')
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_cor_bpTIC_ascrsum_mixed.pdf", plot=plot_cor_bpTIC_ascrsum_mixed, width = 7.5, height = 5, units = "in")
+
+plot_batch_norm_1_YA <- ascr_YA %>%
+  na.omit() %>%
+  ggplot(.) +
+  geom_point(size =2, alpha = 0.8) +
+  aes(x=bpTIC, y=ascr_total, color = batch) +
+  geom_label_repel(aes(label=factor(strain))) +
+  theme_bw()
+
+plot_batch_norm_2_YA <- ascr_YA %>%
+  na.omit() %>%
+  ggplot(.) +
+  geom_point(size =2, alpha = 0.8) +
+  aes(x=bpTIC, y=ascr_total/bpTIC, color = batch) +
+  geom_label_repel(aes(label=factor(strain))) +
+  theme_bw()
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_batch_norm_1_YA.pdf", plot=plot_batch_norm_1_YA, width = 7.5, height = 5, units = "in")
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_batch_norm_2_YA.pdf", plot=plot_batch_norm_2_YA, width = 7.5, height = 5, units = "in")
+
+
+plot_batch_norm_1_mixed <- ascr_mixed %>%
+  na.omit() %>%
+  ggplot(.) +
+  geom_point(size =2, alpha = 0.8) +
+  aes(x=bpTIC, y=ascr_total, color = batch) +
+  geom_label_repel(aes(label=factor(strain))) +
+  theme_bw()
+
+plot_batch_norm_2_mixed <- ascr_mixed %>%
+  na.omit() %>%
+  ggplot(.) +
+  geom_point(size =2, alpha = 0.8) +
+  aes(x=bpTIC, y=ascr_total/bpTIC, color = batch) +
+  geom_label_repel(aes(label=factor(strain))) +
+  theme_bw()
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_batch_norm_1_mixed.pdf", plot=plot_batch_norm_1_mixed, width = 7.5, height = 5, units = "in")
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_batch_norm_2_mixed.pdf", plot=plot_batch_norm_2_mixed, width = 7.5, height = 5, units = "in")
+
+
+## I don't trust any of these normalization -> I will use ascr fraction or pairwise ratio
+
+plot_histogram_bpTIC_ascrsum_YA <- ascr_YA %>%
+  ggplot(.) +
+  geom_histogram() +
+  aes(x=ascrtobpTIC*100) +
+  theme_bw() +
+  xlab("total ascarosides/bpTIC (%)")
+
+plot_histogram_bpTIC_ascrsum_mixed <- ascr_mixed %>%
+  ggplot(.) +
+  geom_histogram() +
+  aes(x=ascrtobpTIC*100) +
+  theme_bw() +
+  xlab("total ascarosides/bpTIC (%)")
+
+mean_bpTIC_YA = mean(ascr_YA$bpTIC)
+mean_ascrsum_YA = mean(ascr_YA$ascr_total)
+
+df_norm_YA <- ascr_YA %>%
+  na.omit() %>%
+  tidyr::gather(-strain, -batch, -bpTIC, -ascr_total, -ascrtobpTIC, key=feature, value=abundance) %>%
+  dplyr::mutate(bpTIC_norm = abundance/bpTIC*mean_bpTIC_YA, ascr_fraction = abundance/ascr_total)
+
+plot_batch_norm_comp <- df_norm_YA %>%
+  dplyr::filter(feature == "ascr.5") %>%
+  na.omit() %>%
+  ggplot(.) +
+  geom_point(size =2, alpha = 0.8) +
+  aes(x=bpTIC_norm, y=ascr_fraction, color = batch) +
+  geom_label_repel(aes(label=factor(strain))) +
+  theme_bw()
+
+plot_batch_norm_bpTIC <- df_norm_YA %>%
+  #dplyr::filter(feature == "ascr.3") %>%
+  na.omit() %>%
+  ggplot(.) +
+  geom_boxplot(outlier.alpha = 0) +
+  geom_jitter(aes(color=batch), size = 1) +
+  aes(x=strain, y=bpTIC_norm) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size=10, color='black'), axis.text.x=element_text(size=11, color='black', angle=90, vjust=0.5, hjust=1)) +
+  facet_wrap(~feature, ncol=7, scales = "free_y") +
+  labs(y="ascr/bpTIC", x="")
+
+plot_batch_norm_bpTIC
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_batch_norm_bpTIC.pdf", plot=plot_batch_norm_bpTIC, width = 15, height = 10, units = "in")
+
+plot_batch_norm_frac <- df_norm_YA %>%
+  #dplyr::filter(feature == "ascr.3") %>%
+  na.omit() %>%
+  ggplot(.) +
+  geom_boxplot(outlier.alpha = 0) +
+  geom_jitter(aes(color=batch), size = 1) +
+  aes(x=strain, y=ascr_fraction*100) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size=10, color='black'), axis.text.x=element_text(size=11, color='black', angle=90, vjust=0.5, hjust=1)) +
+  facet_wrap(~feature, ncol=7, scales = "free_y") +
+  labs(y="ascr fraction (%)", x="")
+
+plot_batch_norm_frac
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_batch_norm_frac.pdf", plot=plot_batch_norm_frac, width = 15, height = 10, units = "in")
+
+plot_batch_ascr_frac <- df_norm_YA %>%
+  dplyr::filter(feature == "ascr.3") %>%
+  na.omit() %>%
+  ggplot(.) +
+  geom_point(size =2, alpha = 0.8) +
+  aes(x=bpTIC, y=ascr_fraction, color = batch) +
+  geom_label_repel(aes(label=factor(strain))) +
+  theme_bw()
+
+plot_batch_ascr_frac
+
+
+df_YA <- ascr_YA %>%
+  tidyr::gather(-strain, -batch, -bpTIC, -ascr_total, -ascrtobpTIC, key=feature, value=abundance) %>%
+  dplyr::group_by(strain, feature) %>%
+  dplyr::mutate(abundance = mean(abundance), ascr_total = mean(ascr_total)) %>%
+  dplyr::ungroup() %>%
+  dplyr::distinct(strain, feature, abundance, .keep_all = T) %>%
+  dplyr::select(-batch) %>%
+  dplyr::mutate(bpTIC_norm = abundance/bpTIC*mean_bpTIC_YA, ascr_fraction = abundance/ascr_total) %>%
+  dplyr::group_by(feature) %>%
+  dplyr::mutate(bpTIC_norm_cv = sd(bpTIC_norm)/mean(bpTIC_norm), ascr_fraction_cv = sd(ascr_fraction)/mean(ascr_fraction)) %>%
+  dplyr::ungroup()
+
+pheno_strains_YA <- unique(df_YA$strain)
+
+plot_oscr18_oscr3_YA <- df_YA %>%
+  dplyr::filter(feature %in% c("oscr.18", "oscr.3")) %>%
+    ggplot(.) +
+    geom_col() +
+    aes(x=reorder(strain, ascr_fraction), y=ascr_fraction*100) +
+    theme_bw() +
+  theme(axis.text.x=element_text(angle = 90), panel.grid.major = element_blank()) +
+  labs(x="strain", y="ascaroside fraction (%)") +
+   facet_wrap(~feature, nrow=8, scales = 'free')
+
+plot_oscr18_oscr3_YA
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_oscr18_oscr3_YA.pdf", plot=plot_oscr18_oscr3_YA, width = 10, height = 6, units = "in")
+
+plot_ascr_frac_YA <- df_YA %>%
+    ggplot(.) +
+    geom_col() +
+    aes(x=reorder(strain, ascr_fraction), y=ascr_fraction*100) +
+    theme_bw() +
+  theme(axis.text.x=element_blank(), panel.grid.major = element_blank()) +
+  labs(x="strain", y="ascaroside fraction (%)") +
+   facet_wrap(~feature, ncol=1, scales = 'free_y')
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_ascr_frac_YA.pdf", plot=plot_ascr_frac_YA, width = 7.5, height = 30, units = "in")
+
+## mixed
+
+mean_bpTIC_mixed = mean(ascr_mixed$bpTIC)
+mean_ascrsum_mixed = mean(ascr_mixed$ascr_total)
+
+df_mixed <- ascr_mixed %>%
+  tidyr::gather(-strain, -batch, -bpTIC, -ascr_total, -ascrtobpTIC, key=feature, value=abundance) %>%
+  dplyr::group_by(strain, feature) %>%
+  dplyr::mutate(abundance = mean(abundance), ascr_total = mean(ascr_total)) %>%
+  dplyr::ungroup() %>%
+  dplyr::distinct(strain, feature, abundance, .keep_all = T) %>%
+  dplyr::select(-batch) %>%
+  dplyr::mutate(bpTIC_norm = abundance/bpTIC*mean_bpTIC_mixed, ascr_fraction = abundance/ascr_total) %>%
+  dplyr::group_by(feature) %>%
+  dplyr::mutate(bpTIC_norm_cv = sd(bpTIC_norm)/mean(bpTIC_norm), ascr_fraction_cv = sd(ascr_fraction)/mean(ascr_fraction)) %>%
+  dplyr::ungroup()
+
+pheno_strains_mixed <- unique(df_mixed$strain)
+
+plot_oscr18_oscr3_mixed <- df_mixed %>%
+  dplyr::filter(feature %in% c("oscr.18", "oscr.3")) %>%
+    ggplot(.) +
+    geom_col() +
+    aes(x=reorder(strain, ascr_fraction), y=ascr_fraction*100) +
+    theme_bw() +
+  theme(axis.text.x=element_text(angle = 90), panel.grid.major = element_blank()) +
+  labs(x="strain", y="ascaroside fraction (%)") +
+   facet_wrap(~feature, nrow=8, scales = 'free')
+
+plot_oscr18_oscr3_mixed
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_oscr18_oscr3_mixed.pdf", plot=plot_oscr18_oscr3_mixed, width = 10, height = 6, units = "in")
+
+plot_ascr_frac_mixed <- df_mixed %>%
+    ggplot(.) +
+    geom_col() +
+    aes(x=reorder(strain, ascr_fraction), y=ascr_fraction*100) +
+    theme_bw() +
+  theme(axis.text.x=element_blank(), panel.grid.major = element_blank()) +
+  labs(x="strain", y="ascaroside fraction (%)") +
+   facet_wrap(~feature, ncol=1, scales = 'free_y')
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_ascr_frac_mixed.pdf", plot=plot_ascr_frac_mixed, width = 7.5, height = 30, units = "in")
+
+## outlier detection
+
+df_YA_outlier <- df_YA %>%
+  dplyr::group_by(feature) %>%
+  dplyr::mutate(mean_fraction = mean(ascr_fraction), sd_fraction = sd(ascr_fraction)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(outlier = ifelse(ascr_fraction > mean_fraction + 5*sd_fraction | ascr_fraction < mean_fraction - 5*sd_fraction, "outlier", NA))
+
+outlier_strains_YA <- unique(dplyr::filter(df_YA_outlier, !is.na(outlier))$strain)
+outlier_features_YA <- unique(dplyr::filter(df_YA_outlier, !is.na(outlier))$feature)
+
+plot_ascr_frac_outliers_YA <- df_YA_outlier %>%
+  #dplyr::filter(feature %in% outlier_features_YA) %>%
+  dplyr::filter(strain %in% outlier_strains_YA) %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=feature, y=ascr_fraction*100) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  labs(x="strain", y="ascaroside fraction (%)") +
+  facet_wrap(~strain, ncol =1, scales = "free_y")
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_ascr_frac_outliers_YA.pdf", plot=plot_ascr_frac_outliers_YA, width = 10, height = 12, units = "in")
+
+plot_ascr_frac_outliers_wo135ig1_YA <- df_YA_outlier %>%
+  dplyr::filter(strain %in% outlier_strains_YA) %>%
+  dplyr::filter(!feature %in% c("ascr.1","ascr.3", "ascr.5", "iglu.1")) %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=feature, y=ascr_fraction*100) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+    labs(x="strain", y="ascaroside fraction (%)") +
+  facet_wrap(~strain, ncol =1, scales = "free_y")
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_ascr_frac_outliers_wo135ig1_YA.pdf", plot=plot_ascr_frac_outliers_wo135ig1_YA, width = 7.5, height = 30, units = "in")
+
+df_mixed_outlier <- df_mixed %>%
+  dplyr::group_by(feature) %>%
+  dplyr::mutate(mean_fraction = mean(ascr_fraction), sd_fraction = sd(ascr_fraction)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(outlier = ifelse(ascr_fraction > mean_fraction + 5*sd_fraction | ascr_fraction < mean_fraction - 5*sd_fraction, "outlier", NA))
+
+outlier_strains_mixed <- unique(dplyr::filter(df_mixed_outlier, !is.na(outlier))$strain)
+outlier_features_mixed <- unique(dplyr::filter(df_mixed_outlier, !is.na(outlier))$feature)
+
+plot_ascr_frac_outliers_mixed <- df_mixed_outlier %>%
+  #dplyr::filter(feature %in% outlier_features_mixed) %>%
+  dplyr::filter(strain %in% outlier_strains_mixed) %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=feature, y=ascr_fraction*100) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+    labs(x="strain", y="ascaroside fraction (%)") +
+  facet_wrap(~strain, ncol =1, scales = "free_y")
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_ascr_frac_outliers_mixed.pdf", plot=plot_ascr_frac_outliers_mixed, width = 10, height = 5, units = "in")
+
+plot_ascr_frac_outliers_wo135ig1_mixed <- df_mixed_outlier %>%
+  dplyr::filter(strain %in% outlier_strains_mixed) %>%
+  dplyr::filter(!feature %in% c("ascr.1","ascr.3", "ascr.5", "iglu.1")) %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=feature, y=ascr_fraction*100) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+    labs(x="strain", y="ascaroside fraction (%)") +
+  facet_wrap(~strain, ncol =1, scales = "free_y")
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_ascr_frac_outliers_wo135ig1_mixed.pdf", plot=plot_ascr_frac_outliers_wo135ig1_mixed, width = 7.5, height = 5, units = "in")
+
+## Principle componenet analysis
+
+df_YA_ascrfrac_PC <- df_YA %>%
+  dplyr::select(strain, feature, ascr_fraction) %>%
+   tidyr::spread(key=feature, value=ascr_fraction)
+
+df_YA_ascrfrac_PC$strain <- as.character(df_YA_ascrfrac_PC$strain)
+
+row.names(df_YA_ascrfrac_PC)<-as.character(df_YA_ascrfrac_PC$strain)
+strain<-row.names(df_YA_ascrfrac_PC)
+
+df_YA_ascrfrac_PC_trim<-df_YA_ascrfrac_PC%>%
+  dplyr::select(-strain)
+
+df_YA_ascrfrac_PC_trim.fit_scaled <- prcomp(df_YA_ascrfrac_PC_trim, scale. = TRUE)
+df_YA_PCA_summary <- data.frame(t(summary(df_YA_ascrfrac_PC_trim.fit_scaled)[[6]]), PC=c(1:48))
+
+plot_YA_PCA_summary <- df_YA_PCA_summary %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=PC, y=Proportion.of.Variance) +
+  theme_bw()
+
+plot_YA_PCA_summary_cum <- df_YA_PCA_summary %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=PC, y=Cumulative.Proportion) +
+  theme_bw()
+  
+ggsave(plot_YA_PCA_summary, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_YA_PCA_summary.pdf", width = 7.5, height = 3.5)
+ggsave(plot_YA_PCA_summary_cum, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_YA_PCA_summary_cum.pdf", width = 7.5, height = 3.5)
+
+## plot for loadings
+
+df_YA_ascrfrac_PC_loading<-data.frame(feature=rownames(df_YA_ascrfrac_PC_trim.fit_scaled[[2]]), df_YA_ascrfrac_PC_trim.fit_scaled[[2]]) %>%
+  tidyr::gather(key="PC", value="loading", -feature)
+
+plot_YA_PC1_loading <- df_YA_ascrfrac_PC_loading %>%
+  dplyr::filter(PC == "PC1") %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=reorder(feature, loading), y=loading) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), axis.title.x=element_blank()) +
+  ggtitle("PC1")
+
+plot_YA_PC2_loading <- df_YA_ascrfrac_PC_loading %>%
+  dplyr::filter(PC == "PC2") %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=reorder(feature, loading), y=loading) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), axis.title.x=element_blank()) +
+  ggtitle("PC2")
+
+plot_YA_PC3_loading <- df_YA_ascrfrac_PC_loading %>%
+  dplyr::filter(PC == "PC3") %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=reorder(feature, loading), y=loading) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), axis.title.x=element_blank()) +
+  ggtitle("PC3")
+
+ggsave(plot_YA_PC1_loading, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_YA_PC1_loading.pdf", width = 7.5, height = 3.5)
+ggsave(plot_YA_PC2_loading, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_YA_PC2_loading.pdf", width = 7.5, height = 3.5)
+ggsave(plot_YA_PC3_loading, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_YA_PC3_loading.pdf", width = 7.5, height = 3.5)
+
+
+
+df_YA_ascrfrac_PC_traits <-df_YA_ascrfrac_PC_trim.fit_scaled[[5]]
+#pc_traits <-data.frame(pcDF.fit[[5]])
+df_YA_ascrfrac_PC_traits <- data.frame(strain, df_YA_ascrfrac_PC_traits)
+
+## save data frame for GWA mapping
+
+write_tsv(df_YA_ascrfrac_PC_traits[1:11], path="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Data/20191008_df_YA_ascrfrac_PC_traits.tsv", col_names = T)
+
+plot(df_YA_ascrfrac_PC_trim.fit_scaled)
+
+plot_PC12_YA <- df_YA_ascrfrac_PC_traits %>%
+  ggplot(.) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_label_repel(data = dplyr::filter(df_YA_ascrfrac_PC_traits, PC1 > 10 | PC2 < -5), aes(label = strain)) +
+  aes(x=PC1, y=PC2) +
+  theme_bw() +
+  theme(text = element_text(size = 13, color = 'black')) +
+  labs(x="PC1 (22.8%)", y="PC2 (13.8%)")
+
+plot_PC12_YA
+
+plot_PC13_YA <- df_YA_ascrfrac_PC_traits %>%
+  ggplot(.) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_label_repel(data = dplyr::filter(df_YA_ascrfrac_PC_traits, PC1 > 10 | PC3 > 5), aes(label = strain)) +
+  aes(x=PC1, y=PC3) +
+  theme_bw() +
+  theme(text = element_text(size = 13, color = 'black')) +
+  labs(x="PC1 (22.8%)", y="PC3 (8.0%)")
+
+plot_PC13_YA
+
+plot_PC23_YA <- df_YA_ascrfrac_PC_traits %>%
+  ggplot(.) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_label_repel(data = dplyr::filter(df_YA_ascrfrac_PC_traits, PC2 < -4), aes(label = strain)) +
+  aes(x=PC2, y=PC3) +
+  theme_bw() +
+  theme(text = element_text(size = 13, color = 'black'))+
+  labs(x="PC2 (13.8%)", y="PC3 (8.0%)")
+
+plot_PC23_YA
+
+plot_PC123_YA <- cowplot::plot_grid(plot_PC12_YA, plot_PC13_YA, plot_PC23_YA, nrow = 1)
+plot_PC123_YA
+
+ggsave(plot_PC123_YA, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_PC123_YA.pdf", width = 7.5, height = 3)
+
+## outliers
+
+plot_ascr_frac_PC_outliers_YA <- df_YA_outlier %>%
+  dplyr::filter(strain %in% c("N2", "ED3052", "JU1242", "JU1400")) %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=feature, y=ascr_fraction*100) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(x="", y="ascaroside fraction (%)") +
+  facet_wrap(~strain, ncol =1, scales = "free_y")
+
+plot_ascr_frac_PC_outliers_YA
+
+ggsave(plot_ascr_frac_PC_outliers_YA, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_ascr_frac_PC_outliers_YA.pdf", width = 7.5, height = 5)
+
+plot_ascr_frac_PC_outliers_YA_little <- df_YA_outlier %>%
+  dplyr::filter(strain %in% c("N2", "ED3052", "JU1242", "JU1400")) %>%
+  dplyr::filter(!feature %in% c("ascr.1","ascr.3", "ascr.5", "iglu.1")) %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=feature, y=ascr_fraction*100) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(x="", y="ascaroside fraction (%)") +
+  facet_wrap(~strain, ncol =1, scales = "free_y")
+
+plot_ascr_frac_PC_outliers_YA_little
+
+ggsave(plot_ascr_frac_PC_outliers_YA_little, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_ascr_frac_PC_outliers_YA_little.pdf", width = 7.5, height = 5)
+
+## PCA GWA mapping result
+
+df_PC1_fine <- readr::read_tsv(file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Plots/ascr_fraction_PC_mapping/Fine_mappings/Data/PC1_snpeff_genes.tsv")
+df_PC1_VT <- readr::read_tsv(file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Plots/ascr_fraction_PC_mapping/BURDEN/VT/Data/PC1.VariableThresholdPrice.assoc")
+df_PC1_SKAT <- readr::read_tsv(file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Plots/ascr_fraction_PC_mapping/BURDEN/SKAT/Data/PC1.Skat.assoc")
+
+df_PC2_fine <- readr::read_tsv(file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Plots/ascr_fraction_PC_mapping/Fine_mappings/Data/PC2_snpeff_genes.tsv")
+df_PC2_VT <- readr::read_tsv(file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Plots/ascr_fraction_PC_mapping/BURDEN/VT/Data/PC2.VariableThresholdPrice.assoc")
+df_PC2_SKAT <- readr::read_tsv(file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Plots/ascr_fraction_PC_mapping/BURDEN/SKAT/Data/PC2.Skat.assoc")
+
+df_PC3_fine <- readr::read_tsv(file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Plots/ascr_fraction_PC_mapping/Fine_mappings/Data/PC3_snpeff_genes.tsv")
+df_PC3_VT <- readr::read_tsv(file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Plots/ascr_fraction_PC_mapping/BURDEN/VT/Data/PC3.VariableThresholdPrice.assoc")
+df_PC3_SKAT <- readr::read_tsv(file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Plots/ascr_fraction_PC_mapping/BURDEN/SKAT/Data/PC3.Skat.assoc")
+
+
+
+## correlation analysis
+
+  ### YA
+
+df_YA_ascrfrac <- df_YA %>%
+  dplyr::select(strain, feature, ascr_fraction) %>%
+   tidyr::spread(key=strain, value=ascr_fraction)
+
+test_table_YA <- t(df_YA_ascrfrac[2:ncol(df_YA_ascrfrac)])
+
+colnames(test_table_YA) <- df_YA_ascrfrac[[1]]
+
+test_result_YA <- cor.table(test_table_YA, cor.method="spearman")[[1]]
+
+## heatmap
+
+ggcorrplot(test_result_YA, hc.order = TRUE, tl.srt = 90) + ggtitle("Sync Adult_all")
+
+ggsave("~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/20190807_YA_ascr_cor_all.pdf", width = 10, height = 10, units = "in")
+
+## network analysis
+
+Graph_cor_YA <- qgraph(test_result_YA, graph = "cor", layout = "spring", labels = colnames(test_table_YA))  #  Unregularized partial correlation network
+qgraph(Graph_cor_YA, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/20190807_YA_ascr_cor_all_network_cor")
+
+Graph_pcor_YA <- qgraph(test_result_YA, graph = "pcor", layout = "spring", labels = colnames(test_table_YA))  #  Unregularized partial correlation network
+qgraph(Graph_pcor_YA, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/20190807_YA_ascr_cor_all_network_pcor")
+
+Graph_lasso_YA <- qgraph(test_result_YA, graph = "glasso", layout = "spring", tuning = 0.25,
+                     sampleSize = nrow(test_table_YA), labels = colnames(test_table_YA))  # Regularized partial correlation network
+qgraph(Graph_lasso_YA, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/20190807_YA_ascr_cor_all_network_lasso")
+
+  ### mixed
+
+df_mixed_ascrfrac <- df_mixed %>%
+  dplyr::select(strain, feature, ascr_fraction) %>%
+   tidyr::spread(key=strain, value=ascr_fraction)
+
+test_table_mixed <- t(df_mixed_ascrfrac[2:ncol(df_mixed_ascrfrac)])
+
+colnames(test_table_mixed) <- df_mixed_ascrfrac[[1]]
+
+test_result_mixed <- cor.table(test_table_mixed, cor.method="spearman")[[1]]
+
+## heatmap
+
+ggcorrplot(test_result_mixed, hc.order = TRUE, tl.srt = 90) + ggtitle("Mixed stage")
+
+ggsave("~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/20190807_mixed_ascr_cor_all.pdf", width = 10, height = 10, units = "in")
+
+## network analysis
+
+Graph_cor_mixed <- qgraph(test_result_mixed, graph = "cor", layout = "spring", labels = colnames(test_table_mixed))  #  Unregularized partial correlation network
+qgraph(Graph_cor_mixed, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/20190807_mixed_ascr_cor_all_network_cor")
+
+Graph_pcor_mixed <- qgraph(test_result_mixed, graph = "pcor", layout = "spring", labels = colnames(test_table_mixed))  #  Unregularized partial correlation network
+qgraph(Graph_pcor_mixed, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/20190807_mixed_ascr_cor_all_network_pcor")
+
+Graph_lasso_mixed <- qgraph(test_result_mixed, graph = "glasso", layout = "spring", tuning = 0.25,
+                     sampleSize = nrow(test_table_mixed), labels = colnames(test_table_mixed))  # Regularized partial correlation network
+qgraph(Graph_lasso_mixed, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/20190807_mixed_ascr_cor_all_network_lasso")
+
+
+## GWA mapping - to get GRM for heritability estimate
+
+df_GWA_fraction <- data.frame(strain = rownames(test_table_YA), test_table_YA)
+
+write_tsv(df_GWA_fraction, path="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Data/20190808_ascr_fraction.tsv", col_names = T)
+
+
+## Heritability
+
+geno_matrix <- read.table(file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Data/Genotype_Matrix.tsv", header = T)
+
+A <- sommer::A.mat(t(geno_matrix[,colnames(geno_matrix) %in% pheno_strains_YA]))
+E <- sommer::E.mat(t(geno_matrix[,colnames(geno_matrix) %in% pheno_strains_YA]))
+
+df_h2 <- data.frame(trait = NA, h2 = NA, h2_SE = NA)
+
+for(i in 1:(ncol(df_GWA_fraction)-1)) {
+  
+  trait <- colnames(df_GWA_fraction)[i+1]
+  
+  df_y <- df_GWA_fraction %>%
+  dplyr::filter(strain != "JU1516") %>%  ### same isotype with JU1581
+  dplyr::arrange(strain) %>%
+  dplyr::select(strain, value=trait) %>%
+  dplyr::mutate(strain = as.character(strain))
+  
+  h2_res <- sommer::mmer(value~1, random=~vs(strain,Gu=A), data=df_y)
+  
+  h2 <- as.numeric(pin(h2_res, h2 ~ (V1) / (V1+V2))[[1]][1])
+  h2_SE <- pin(h2_res, h2 ~ (V1) / (V1+V2))[[2]]
+  
+  h2_combine = c(trait, h2, h2_SE)
+  
+  df_h2 <- rbind(df_h2, h2_combine) %>%
+    na.omit() %>%
+    dplyr::arrange(desc(h2))
+}
+
+View(df_h2)
+
+plot_frac_h2_histo <- df_h2 %>%
+  ggplot(.) +
+  geom_histogram(binwidth = 0.01) +
+  aes(x=as.numeric(h2)) +
+  theme_bw() +
+  labs(x="Narrow-sense heritability (h2)")
+
+plot_frac_h2_histo
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_frac_YA_h2_histo.pdf", plot=plot_frac_h2_histo, width = 7.5, height = 5, units = "in")
+
+## high h2 (>=50%) plots
+
+h2_high_traits <- dplyr::filter(df_h2, h2 >= 0.5)$trait
+
+plot_high_h2 <- df_YA %>%
+  dplyr::filter(feature %in% h2_high_traits) %>%
+    ggplot(.) +
+    geom_col() +
+    aes(x=reorder(strain, ascr_fraction), y=ascr_fraction*100) +
+    theme_bw() +
+  theme(axis.text.x=element_text(size=9, color='black', angle = 90, hjust=1, vjust=0.5), panel.grid.major = element_blank()) +
+  labs(x="strain", y="ascaroside fraction (%)") +
+   facet_wrap(~feature, ncol=1, scales = 'free_y')
+
+plot_high_h2
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_high_h2.pdf", plot=plot_high_h2, width = 10, height = 10, units = "in")
+
+
+
+### srg-37 deletion and ascr#5 traits
+
+X_indel_manta <- read.table(file ="~/Dropbox/AndersenLab/LabFolders/Daehan/dauer/RData/manta_x.tsv")
+
+srg37_df_rename <- X_indel_manta %>%
+  dplyr::filter(V2==14234136) %>%
+  dplyr::select(strain=V7, srg37 = V8)
+
+srg37_df_rename$srg37 <- gsub("0/1", "1/1", srg37_df_rename$srg37)
+
+srg37_df_rename$srg37 <- factor(srg37_df_rename$srg37, levels = c("0/0", "1/1"), labels = c("REF", "DEL"))
+
+df_ascr5_frac <- df_YA %>%
+  dplyr::filter(feature == "ascr.5") %>%
+  dplyr::select(strain, ascr_fraction) %>%
+  dplyr::left_join(., srg37_df_rename, by = 'strain')
+
+plot_ascr5_srg37 <- df_ascr5_frac %>%
+  na.omit() %>%
+  ggplot(.) +
+  geom_boxplot(outlier.alpha = 0) +
+  geom_jitter() +
+  aes(x=srg37, y=ascr_fraction, fill=srg37) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Set1") +
+  theme(text = element_text(size=13, color = 'black'))
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_ascr5_srg37.pdf", plot=plot_ascr5_srg37, width = 5, height = 4, units = "in")
+
+## fungi trap -- should test with mixed stage
+
+df_trap <- read.csv(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Data/fungi_trap.csv")
+
+#test <- df_trap %>%
+#  dplyr::mutate(test=strain) %>%
+#  dplyr::mutate(test = ifelse(strain == "N2", paste(test, "xxx", sep = "&"), as.character(test)))
+
+df_trap_ascr_YA <- df_trap %>%
+  dplyr::left_join(., data.frame(strain=rownames(test_table_YA), test_table_YA), by = 'strain') %>%
+  na.omit()
+
+write.csv(df_trap_ascr_YA, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Collaboration/YH/df_trap_ascr_YA.csv")
+
+df_trap_ascr_mixed <- df_trap %>%
+  dplyr::left_join(., data.frame(strain=rownames(test_table_mixed), test_table_mixed), by = 'strain') %>%
+  na.omit()
+
+write.csv(df_trap_ascr_mixed, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Collaboration/YH/df_trap_ascr_mixed.csv")
+
+
+plot_trap_YA_ascr3 <- df_trap_ascr_YA %>%
+  ggplot(.) +
+  geom_point() +
+  aes(x=trap.number, y=ascr.3) +
+  theme_bw()
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_trap_YA_ascr3.pdf", plot=plot_trap_YA_ascr3, width = 7.5, height = 5, units = "in")
+
+plot_trap_mix_osas10 <- df_trap_ascr_mixed %>%
+  ggplot(.) +
+  geom_point() +
+  aes(x=trap.number, y=osas.10) +
+  theme_bw()
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_trap_mix_osas10.pdf", plot=plot_trap_mix_osas10 , width = 7.5, height = 5, units = "in")
+
+test_table_YA_fungi <- df_trap_ascr_YA[2:ncol(df_trap_ascr_YA)]
+test_table_mixed_fungi <- df_trap_ascr_mixed[2:ncol(df_trap_ascr_mixed)]
+
+rownames(test_table_YA_fungi) <- df_trap_ascr_YA[[1]]
+rownames(test_table_mixed_fungi) <- df_trap_ascr_mixed[[1]]
+
+test_result_YA_fungi <- cor.table(test_table_YA_fungi, cor.method="spearman")[[1]]
+test_result_mixed_fungi <- cor.table(test_table_mixed_fungi, cor.method="spearman")[[1]]
+
+df_trap_cor_YA <- data.frame(test_result_YA_fungi) %>%
+  dplyr::select(fungi_rho_YA=trap.number) %>%
+  dplyr::mutate(ascr_ID = colnames(test_result_YA_fungi)) %>%
+  dplyr::arrange(-fungi_rho_YA)
+
+write.csv(df_trap_cor_YA, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Collaboration/YH/df_trap_cor_YA.csv")
+
+df_trap_cor_mixed <- data.frame(test_result_mixed_fungi) %>%
+  dplyr::select(fungi_rho_mix=trap.number) %>%
+  dplyr::mutate(ascr_ID = colnames(test_result_mixed_fungi)) %>%
+  dplyr::arrange(-fungi_rho_mix)
+
+write.csv(df_trap_cor_mixed, file = "~/Dropbox/AndersenLab/LabFolders/Daehan/Collaboration/YH/df_trap_cor_mixed.csv")
+
+
+plot_ascr_fun_YA <- df_trap_cor_YA %>%
+  dplyr::filter(ascr_ID != "trap.number") %>%
+  ggplot(.) +
+  geom_tile() +
+  aes(x=reorder(ascr_ID, fungi_rho_YA), y=1, fill = fungi_rho_YA) +
+  scale_fill_gradient2() +
+  scale_y_continuous(expand = c(0,0)) +
+  theme_bw() +
+  theme(axis.text.y = element_blank(), axis.title = element_blank(), axis.ticks.y = element_blank(), axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, color = 'black', size = 10)) +
+  ggtitle("Synchronized young adults") +
+  labs(fill = "Rho")
+
+plot_ascr_fun_YA
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_trap_YA.pdf", plot=plot_ascr_fun_YA, width = 7.5, height = 2, units = "in")
+
+plot_ascr_fun_mixed <- df_trap_cor_mixed %>%
+  dplyr::filter(ascr_ID != "trap.number") %>%
+  ggplot(.) +
+  geom_tile() +
+  aes(x=reorder(ascr_ID, fungi_rho_mix), y=1, fill = fungi_rho_mix) +
+  scale_fill_gradient2() +
+  scale_y_continuous(expand = c(0,0)) +
+  theme_bw() +
+  theme(axis.text.y = element_blank(), axis.title = element_blank(), axis.ticks.y = element_blank(), axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, color = 'black', size = 10)) +
+  ggtitle("Mixed stage") +
+  labs(fill = "Rho")
+
+plot_ascr_fun_mixed
+
+ggsave(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Manuscripts/Metoblites/Figures/plot_trap_mixed.pdf", plot=plot_ascr_fun_mixed, width = 7.5, height = 2, units = "in")
+
+ ## Table of list
+  #a. comparison between bpTIC vs all ascaroside
+
+  #1. Histogram of ascaroside abundance traits and single ascaroside mapping
+  #2. Heritability analysis from biological replicates
+  #3. Pairwise correlation of ascaroside abundnace
+  #4. Principal component analysis
+  #5. GWAS without outliers - i) each ascaroside ii) pairwise ratio
+  #6. specific ascaroside analysis - e.g) icas missing strains
+
+
+## load normalized ascaroside dataset - remove overlapping isotypes ("JU238", "JU363", "JU1581", "QG537", "QG538", "JU491"), non-wild isolates (CX11400, QG1)
+
+
+ascr_mix <- read.csv(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_ascr_norm_mixed.csv") %>%
+  dplyr::rename(feature_id = Feature.ID..mass_rt., rt_min = rt..min., rt_sec = rt..sec.) %>%
+  dplyr::select(-rt_min, -rtmin, -rtmax, -mz, -mzmax, -mzmin, -rt_sec) %>%
+  tidyr::gather(-ascr_ID, -feature_id, key="strain", value = "abundance") %>% 
+  tidyr::separate(strain, c("strain", "batch"), sep = "\\.") %>%
+  dplyr::filter(!strain %in% c("JU238", "JU363", "JU1581", "QG537", "QG538", "CX11400", "JU491", "QG1"))
+
+ascr_YA <- read.csv(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_ascr_norm_adult.csv") %>%
+  dplyr::rename(feature_id = Feature.ID..mass_rt., rt_min = rt..min., rt_sec = rt..sec.) %>%
+  dplyr::select(-rt_min, -rtmin, -rtmax, -mz, -mzmax, -mzmin, -rt_sec) %>%
+  tidyr::gather(-ascr_ID, -feature_id, key="strain", value = "abundance") %>% 
+  tidyr::separate(strain, c("strain", "batch"), sep = "\\.") %>%
+  dplyr::filter(!strain %in% c("JU238", "JU363", "JU1581", "QG537", "QG538", "CX11400", "JU491", "QG1"))
+
+ascr_mix$batch <- sub("WIb", "W1b", ascr_mix$batch)
+ascr_mix$ascr_ID <- sub("-Glu", "", ascr_mix$ascr_ID)
+ascr_YA$batch <- sub("WIb", "W1b", ascr_YA$batch)
+ascr_YA$ascr_ID <- sub("-Glu", "", ascr_YA$ascr_ID)
+
+```
+
+```{r, warning=FALSE, message=FALSE}
+
+  #1. Histogram of ascaroside abundance traits and single ascaroside mapping
+
+## Histograms
+
+histo_mix <- ascr_mix %>%
+  dplyr::group_by(ascr_ID, feature_id, strain) %>%
+  dplyr::summarise(abundance=mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(stage = "mix")
+
+histo_adult <- ascr_YA %>%
+  dplyr::group_by(ascr_ID, feature_id, strain) %>%
+  dplyr::summarise(abundance=mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(stage = "adult")
+
+df_histo <- rbind(histo_mix, histo_adult)
+
+plot_ascr_histo <- df_histo %>%
+  ggplot(.) +
+  geom_histogram(alpha = 0.7) +
+  aes(x=abundance/1e6, fill = stage) +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw() +
+  labs(x="Normalized pheromone abundance(/1e6)", y="Count") +
+  theme(text = element_text(size=17), axis.title.y = element_text(face = 'bold'), axis.ticks.x = element_blank()) +
+  facet_wrap(~ascr_ID, scale = "free")
+
+ggsave("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_plot_ascr_histo.pdf", plot = plot_ascr_histo, width=14.5, height = 10.5, units = "in")
+
+plot_ascr_histo_adult <- histo_adult %>%
+  ggplot(.) +
+  geom_histogram(alpha = 0.7) +
+  aes(x=abundance/1e6) +
+  theme_bw() +
+  labs(x="Normalized pheromone abundance(/1e6)", y="Count", title = "Synchronous adults") +
+  theme(text = element_text(size=17), axis.title.y = element_text(face = 'bold'), axis.ticks.x = element_blank()) +
+  facet_wrap(~ascr_ID, scale = "free")
+
+ggsave("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_plot_ascr_histo_adult.pdf", plot = plot_ascr_histo_adult, width=14.5, height = 10.5, units = "in")
+
+## Ascaroside mapping _ YA synchronized
+
+ascr_YA <- read.csv(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_ascr_norm_adult.csv") %>%
+  dplyr::rename(feature_id = Feature.ID..mass_rt., rt_min = rt..min., rt_sec = rt..sec.) %>%
+  dplyr::select(-rt_min, -rtmin, -rtmax, -mz, -mzmax, -mzmin, -rt_sec) %>%
+  tidyr::gather(-ascr_ID, -feature_id, key="strain", value = "abundance") %>% 
+  tidyr::separate(strain, c("strain", "batch"), sep = "\\.")
+
+df_GWA_ascr_YA <- ascr_YA %>%
+  dplyr::group_by(ascr_ID, strain) %>%
+  dplyr::summarise(m_abundance = mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  na.omit() %>%
+  tidyr::spread(ascr_ID, m_abundance) %>%
+  dplyr::filter(!strain %in% c("JU238", "JU363", "JU1581", "QG537", "QG538", "CX11400", "JU491", "QG1"))
+
+process_df_ascr_YA <- process_pheno(df_GWA_ascr_YA)
+mapping_ascr_YA <- gwas_mappings(process_df_ascr_YA, mapping_snp_set = FALSE)
+process_mapping_ascr_YA <- process_mappings(mapping_ascr_YA, process_df_ascr_YA) %>%
+  dplyr::filter(CHROM != "MtDNA")
+
+manplot(process_mapping_ascr_YA)
+
+process_mapping_ascr_YA %>%
+na.omit() %>%
+  ggplot(.)+
+  aes(x=factor(as.character(allele),labels = c("REF","ALT")), y = value, fill = factor(as.character(allele),labels = c("REF","ALT")))+
+  geom_jitter(position=position_jitterdodge(jitter.width = 1), alpha = .7)+
+  geom_boxplot(outlier.alpha = 0, alpha = 0.7)+
+  scale_fill_brewer(palette = "Set1") +
+  facet_wrap(trait~marker, ncol=2, scales = "free")+
+  theme_bw()+
+  theme(text = element_text(size=11, color = "black"), axis.title = element_text(size=13, color = "black"), axis.text = element_text(size=11, color = "black"), legend.position = 'none', strip.text = element_text(size=10, color = "black")) +
+  labs(x="", y= "Phenotype")
+
+genes_ascr_YA <- process_correlations(variant_correlation(process_mapping_ascr_YA, condition_trait = F))
+
+genes_summary_ascr_YA <- genes_ascr_YA %>%
+  dplyr::filter(strain == "N2")
+
+genes_summary_ascr_YA  %>% 
+  ggplot(.)+
+  aes(x = POS/1e6, y = -log10(corrected_spearman_cor_p), fill = -log10(corrected_spearman_cor_p))+
+  scale_color_gradient() +
+  geom_point(shape=21, size =1, alpha = .7)+
+  ggplot2::theme_bw() + 
+  ggplot2::theme(axis.text.x = ggplot2::element_text(size = 10, face = "bold", color = "black"),
+                 axis.text.y = ggplot2::element_text(size = 10, face = "bold", color = "black"), 
+                 axis.title.x = ggplot2::element_text(size = 10, face = "bold", color = "black", vjust = -0.3), 
+                 axis.title.y = ggplot2::element_text(size = 8, face = "bold", color = "black"), 
+                 strip.text.x = ggplot2::element_text(size = 10, face = "bold", color = "black"), 
+                 strip.text.y = ggplot2::element_text(size = 10,  face = "bold", color = "black"), 
+                 plot.title = ggplot2::element_text(size = 0,  face = "bold", vjust = 1),
+                 panel.background = ggplot2::element_rect(color = "black",  size = 1.2), 
+                 strip.background = ggplot2::element_rect(color = "black", size = 1.2),
+                 legend.position = 'none')+
+  labs(x = "Genomic Position (Mb)", y = expression(bold(-log[10](bolditalic(p))))) +
+  facet_wrap(~trait, nrow=2)
+
+save(df_GWA_ascr_YA, process_df_ascr_YA, mapping_ascr_YA, process_mapping_ascr_YA, genes_ascr_YA, file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_YA_ascr_GWA.RData")
+
+load(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_YA_ascr_GWA.RData")
+
+## mixed stage mapping
+
+ascr_mix <- read.csv(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_ascr_norm_mixed.csv") %>%
+  dplyr::rename(feature_id = Feature.ID..mass_rt., rt_min = rt..min., rt_sec = rt..sec.) %>%
+  dplyr::select(-rt_min, -rtmin, -rtmax, -mz, -mzmax, -mzmin, -rt_sec) %>%
+  tidyr::gather(-ascr_ID, -feature_id, key="strain", value = "abundance") %>% 
+  tidyr::separate(strain, c("strain", "batch"), sep = "\\.")
+
+df_GWA_ascr_mix <- ascr_mix %>%
+  dplyr::group_by(ascr_ID, strain) %>%
+  dplyr::summarise(m_abundance = mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  na.omit() %>%
+  tidyr::spread(ascr_ID, m_abundance) %>%
+  dplyr::filter(!strain %in% c("JU238", "JU363", "JU1581", "QG537", "QG538", "CX11400", "JU491", "QG1"))
+
+process_df_ascr_mix <- process_pheno(df_GWA_ascr_mix)
+mapping_ascr_mix <- gwas_mappings(process_df_ascr_mix, mapping_snp_set = FALSE)
+process_mapping_ascr_mix <- process_mappings(mapping_ascr_mix, process_df_ascr_mix) %>%
+  dplyr::filter(CHROM != "MtDNA")
+
+manplot(process_mapping_ascr_mix)
+
+process_mapping_ascr_mix %>%
+na.omit() %>%
+  ggplot(.)+
+  aes(x=factor(as.character(allele),labels = c("REF","ALT")), y = value, fill = factor(as.character(allele),labels = c("REF","ALT")))+
+  geom_jitter(position=position_jitterdodge(jitter.width = 1), alpha = .7)+
+  geom_boxplot(outlier.alpha = 0, alpha = 0.7)+
+  scale_fill_brewer(palette = "Set1") +
+  facet_wrap(trait~marker, ncol=2, scales = "free")+
+  theme_bw()+
+  theme(text = element_text(size=11, color = "black"), axis.title = element_text(size=13, color = "black"), axis.text = element_text(size=11, color = "black"), legend.position = 'none', strip.text = element_text(size=10, color = "black")) +
+  labs(x="", y= "Phenotype")
+
+genes_ascr_mix <- process_correlations(variant_correlation(process_mapping_ascr_mix, condition_trait = F))
+
+genes_summary_ascr_mix <- genes_ascr_mix %>%
+  dplyr::filter(strain == "N2")
+
+genes_summary_ascr_mix  %>% 
+  ggplot(.)+
+  aes(x = POS/1e6, y = -log10(corrected_spearman_cor_p), fill = -log10(corrected_spearman_cor_p))+
+  scale_color_gradient() +
+  geom_point(shape=21, size =1, alpha = .7)+
+  ggplot2::theme_bw() + 
+  ggplot2::theme(axis.text.x = ggplot2::element_text(size = 10, face = "bold", color = "black"),
+                 axis.text.y = ggplot2::element_text(size = 10, face = "bold", color = "black"), 
+                 axis.title.x = ggplot2::element_text(size = 10, face = "bold", color = "black", vjust = -0.3), 
+                 axis.title.y = ggplot2::element_text(size = 8, face = "bold", color = "black"), 
+                 strip.text.x = ggplot2::element_text(size = 10, face = "bold", color = "black"), 
+                 strip.text.y = ggplot2::element_text(size = 10,  face = "bold", color = "black"), 
+                 plot.title = ggplot2::element_text(size = 0,  face = "bold", vjust = 1),
+                 panel.background = ggplot2::element_rect(color = "black",  size = 1.2), 
+                 strip.background = ggplot2::element_rect(color = "black", size = 1.2),
+                 legend.position = 'none')+
+  labs(x = "Genomic Position (Mb)", y = expression(bold(-log[10](bolditalic(p))))) +
+  facet_wrap(~trait, ncol=1)
+
+save(df_GWA_ascr_mix, process_df_ascr_mix, mapping_ascr_mix, process_mapping_ascr_mix, genes_ascr_mix, file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_mixed_ascr_GWA.RData")
+
+load(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_mixed_ascr_GWA.RData")
+
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+
+  #2. Heritability analysis from biological replicates
+
+## Analysis replicates for broad-sense heritability calculation
+
+ # 1) mix
+
+df_ascr_reps_mix <- ascr_mix %>%
+  dplyr::filter(strain %in% c("CB4856", "DL238", "JU258", "N2")) %>%
+  dplyr::group_by(ascr_ID) %>%
+  dplyr::mutate(resid = residuals(lm(abundance ~ batch))) %>%
+  dplyr::ungroup()
+
+plot_H2_mix <- df_ascr_reps_mix %>%
+  ggplot(.) +
+  geom_jitter(alpha = 0.8) +
+  geom_boxplot(outlier.alpha = 0, alpha = 0.8, position = "dodge") +
+  aes(x=strain, y=resid/10e6, fill = strain) +
+  theme_bw() +
+  xlab("Mixed stage") +
+  ylab("Normalized pheromone abundacne") +
+  facet_wrap(~ascr_ID, scale = "free") +
+  theme(text = element_text(size=17), axis.title.y = element_text(face = 'bold'), axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+ggsave(filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_mix_H2.pdf", plot_H2_mix, width=14.5, height = 10.5, units = "in")
+
+## Calculating heritability
+
+H2_mix <- NULL
+
+for (i in unique(df_ascr_reps_mix$ascr_ID)) {
+  
+  df_as <- df_ascr_reps_mix %>%
+    dplyr::filter(ascr_ID == i)
+  
+  pheno <- df_as$resid
+  strain <- df_as$strain
+  
+  reffMod <- lme4::lmer(pheno ~ 1 + (1|strain))
+  
+  Variances <- as.data.frame(lme4::VarCorr(reffMod, comp = "Variance"))
+  
+  Vg <- Variances$vcov[1]
+  Ve <- Variances$vcov[2]
+  H2_mix[i] <- round(Vg/(Vg+Ve), digits =4)
+  
+}
+
+df_H2_mix <- data.frame(H2_mix = H2_mix)
+df_H2_mix <- data.frame(ascr_ID = rownames(df_H2_mix), df_H2_mix)
+
+plot_H2histo_mix <- df_H2_mix %>%
+  ggplot(.) +
+  geom_histogram(binwidth=0.1) +
+  aes(x=H2_mix) +
+  theme_bw() +
+  labs(x="Broad-sense heritability") +
+  theme(text = element_text(size=16), axis.title = element_text(size=17, face = 'bold'))
+
+ggsave("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_ascr_mix_H2_histo.pdf", plot = plot_H2histo_mix, width = 6.3, height = 4.6, units = "in")
+
+ # 2) staged - take JU258 which seems to only have technical replicates
+
+df_ascr_reps_YA <- ascr_YA %>%
+  dplyr::filter(strain %in% c("CB4856", "DL238", "N2", "JU258")) %>%
+  dplyr::group_by(ascr_ID) %>%
+  dplyr::mutate(resid = residuals(lm(abundance ~ batch))) %>%
+  dplyr::ungroup()
+
+df_JU258 <- df_ascr_reps_YA %>%
+  dplyr::filter(strain == "JU258") %>%
+  dplyr::select(ascr_ID, abundance, batch) %>%
+  tidyr::spread(ascr_ID, abundance)
+
+colnames(df_JU258) <- gsub('#', '', colnames(df_JU258))
+
+df_JU258 %>%
+  ggplot(.) +
+  geom_point() +
+  geom_line() +
+  aes(x=ascr1, y=ascr3) +
+  theme_bw()
+
+df_JU258 %>%
+  ggplot(.) +
+  geom_point() +
+  geom_line() +
+  aes(x=ascr9, y=ascr5) +
+  theme_bw() +
+  ggtitle("JU258")
+
+df_JU258 %>%
+  ggplot(.) +
+  geom_point() +
+  geom_line() +
+  aes(x=ascr8, y=ascr7) +
+  theme_bw()
+
+df_JU258 %>%
+  ggplot(.) +
+  geom_point() +
+  geom_line() +
+  aes(x=ascr12, y=icas3) +
+  theme_bw()
+
+
+df_N2 <- df_ascr_reps_YA %>%
+  dplyr::filter(strain == "N2") %>%
+  dplyr::select(ascr_ID, abundance, batch) %>%
+  tidyr::spread(ascr_ID, abundance)
+
+colnames(df_N2) <- gsub('#', '', colnames(df_N2))
+
+df_N2 %>%
+  ggplot(.) +
+  geom_point() +
+  geom_line() +
+  aes(x=ascr1, y=ascr3) +
+  theme_bw() +
+  ggtitle("N2")
+
+df_N2 %>%
+  ggplot(.) +
+  geom_point() +
+  geom_line() +
+  aes(x=ascr9, y=ascr5) +
+  theme_bw() +
+  ggtitle("N2")
+
+df_N2 %>%
+  ggplot(.) +
+  geom_point() +
+  geom_line() +
+  aes(x=ascr8, y=ascr7) +
+  theme_bw() +
+  ggtitle("N2")
+
+df_N2 %>%
+  ggplot(.) +
+  geom_point() +
+  geom_line() +
+  aes(x=ascr12, y=icas3) +
+  theme_bw() +
+  ggtitle("N2")
+
+plot_H2_YA <- df_ascr_reps_YA %>%
+  ggplot(.) +
+  geom_jitter(alpha = 0.8) +
+  geom_boxplot(outlier.alpha = 0, alpha = 0.8, position = "dodge") +
+  aes(x=strain, y=resid/10e6, fill = strain) +
+  theme_bw() +
+  xlab("Synchronized adult") +
+  ylab("Normalized pheromone abundacne") +
+  facet_wrap(~ascr_ID, scale = "free") +
+  theme(text = element_text(size=17), axis.title.y = element_text(face = 'bold'), axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+ggsave(filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_YA_H2.pdf", plot_H2_YA, width=14.5, height = 10.5, units = "in")
+
+## Calculating heritability
+
+H2_YA <- NULL
+
+for (i in unique(df_ascr_reps_YA$ascr_ID)) {
+  
+  df_as <- df_ascr_reps_YA %>%
+    dplyr::filter(ascr_ID == i)
+  
+  pheno <- df_as$resid
+  strain <- df_as$strain
+  
+  reffMod <- lme4::lmer(pheno ~ 1 + (1|strain))
+  
+  Variances <- as.data.frame(lme4::VarCorr(reffMod, comp = "Variance"))
+  
+  Vg <- Variances$vcov[1]
+  Ve <- Variances$vcov[2]
+  H2_YA[i] <- round(Vg/(Vg+Ve), digits =4)
+  
+}
+
+df_H2_YA <- data.frame(H2_YA = H2_YA)
+df_H2_YA <- data.frame(ascr_ID = rownames(df_H2_YA), df_H2_YA)
+
+plot_H2histo_YA <- df_H2_YA %>%
+  ggplot(.) +
+  geom_histogram(binwidth=0.1) +
+  aes(x=H2_YA) +
+  theme_bw() +
+  labs(x="Broad-sense heritability") +
+  theme(text = element_text(size=16), axis.title = element_text(size=17, face = 'bold'))
+
+ggsave("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_ascr_YA_H2_histo.pdf", plot = plot_H2histo_YA, width = 6.3, height = 4.6, units = "in")
+
+df_H2 <- df_H2_mix %>%
+  dplyr::left_join(., df_H2_YA, by='ascr_ID') %>%
+  tidyr::gather(-ascr_ID, key = "condition", value = "H2")
+
+plot_H2_histo_comp <- df_H2 %>%
+  ggplot(.) +
+  geom_histogram(binwidth=0.1, alpha = 0.7) +
+  aes(x=H2, fill = condition) +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw() +
+  labs(x="Broad-sense heritability", y="Count") +
+  theme(text = element_text(size=16), axis.title = element_text(size=17, face = 'bold'))
+
+ggsave("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_ascr_H2_histo_comp.pdf", plot = plot_H2_histo_comp, width = 6.3, height = 4.6, units = "in")
+
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+
+  #3. Pairwise correlation of ascaroside abundnace
+
+ #1) mix
+
+df_mix <- ascr_mix %>%
+  dplyr::group_by(ascr_ID, feature_id, strain) %>%
+  dplyr::summarise(abundance=mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  tidyr::spread(key=strain, value=abundance)
+
+test_table_mix <- t(df_mix[3:ncol(df_mix)])
+colnames(test_table_mix) <- df_mix[[1]]
+
+test_result_mix <- cor.table(test_table_mix, cor.method="pearson")[[1]]
+
+## heatmap
+
+ggcorrplot(test_result_mix, hc.order = TRUE) + ggtitle("Mixed stage_all")
+
+ggsave("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_mixed_ascr_cor_all.pdf", width = 7.5, height = 7.5, units = "in")
+
+## network analysis
+
+Graph_cor_mix <- qgraph(test_result_mix, graph = "cor", layout = "spring", labels = colnames(test_table_mix))  #  Unregularized partial correlation network
+qgraph(Graph_cor_mix, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_mixed_ascr_cor_all_network_cor")
+
+
+Graph_pcor_mix <- qgraph(test_result_mix, graph = "pcor", layout = "spring", labels = colnames(test_table_mix))  #  Unregularized partial correlation network
+qgraph(Graph_pcor_mix, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_mixed_ascr_cor_all_network_pcor")
+
+Graph_lasso_mix <- qgraph(test_result_mix, graph = "glasso", layout = "spring", tuning = 0.25, 
+                     sampleSize = nrow(test_table_mix), labels = colnames(test_table_mix))  # Regularized partial correlation network
+qgraph(Graph_lasso_mix, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_mixed_ascr_cor_all_network_lasso")
+
+## For replicated strains - N2, CB4856, DL238, JU258
+
+rep_strains <- c("N2", "CB4856", "DL238", "JU258")
+
+for (i in rep_strains) {
+
+df_rep <- df_ascr_reps_mix  %>%
+  dplyr::filter(strain == i) %>%
+  dplyr::select(ascr_ID, batch, resid) %>%
+  tidyr::spread(batch, resid)
+  
+test_table_mix_rep <- t(df_rep[2:ncol(df_rep)])
+colnames(test_table_mix_rep) <- df_rep[[1]]
+
+test_result_mix_rep <- cor.table(test_table_mix_rep, cor.method="pearson")[[1]]
+
+ggcorrplot(test_result_mix_rep, hc.order = TRUE) + ggtitle(paste("Mixed stage", i, sep = "_"))
+
+ggsave(glue::glue("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20190701_New_mixed_ascr_cor_{i}.pdf"), width = 7.5, height = 7.5, units = "in")
+
+Graph_pcor_mix_rep <- qgraph(test_result_mix_rep, graph = "pcor", layout = "spring", labels = colnames(test_table_mix_rep))  #  Unregularized partial correlation network
+qgraph(Graph_pcor_mix_rep, filetype = "pdf", height = 7.5, width = 7.5, filename = glue::glue( "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20190701_New_mixed_ascr_cor_{i}_network_pcor"))
+
+#Graph_lasso_mix_rep <- qgraph(test_result_mix_rep, graph = "glasso", layout = "spring", tuning = 0.25, sampleSize = nrow(test_table_mix_rep), labels = colnames(test_table_mix_rep))  # Regularized partial correlation network
+#qgraph(Graph_lasso_mix_rep, filetype = "pdf", height = 7.5, width = 7.5, filename = glue::glue( "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_mixed_ascr_cor_{i}_network_lasso"))
+
+}
+
+  #2) YA
+
+df_YA <- ascr_YA %>%
+  dplyr::group_by(ascr_ID, feature_id, strain) %>%
+  dplyr::summarise(abundance=mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  tidyr::spread(key=strain, value=abundance)
+
+test_table_YA <- t(df_YA[3:ncol(df_YA)])
+colnames(test_table_YA) <- df_YA[[1]]
+
+## remove weird X row
+test_table_YA_clean <- test_table_YA[1:nrow(test_table_YA)-1,]
+
+test_result_YA <- cor.table(test_table_YA_clean, cor.method="pearson")[[1]]
+
+## heatmap
+
+ggcorrplot(test_result_YA, hc.order = TRUE) + ggtitle("Sync Adult_all")
+
+ggsave("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_adult_ascr_cor_all.pdf", width = 7.5, height = 7.5, units = "in")
+
+## network analysis
+
+Graph_cor_YA <- qgraph(test_result_YA, graph = "cor", layout = "spring", labels = colnames(test_table_YA))  #  Unregularized partial correlation network
+qgraph(Graph_cor_YA, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_adult_ascr_cor_all_network_cor")
+
+Graph_pcor_YA <- qgraph(test_result_YA, graph = "pcor", layout = "spring", labels = colnames(test_table_YA))  #  Unregularized partial correlation network
+qgraph(Graph_pcor_YA, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_adult_ascr_cor_all_network_pcor")
+
+Graph_lasso_YA <- qgraph(test_result_YA, graph = "glasso", layout = "spring", tuning = 0.25,
+                     sampleSize = nrow(test_table_YA), labels = colnames(test_table_YA))  # Regularized partial correlation network
+qgraph(Graph_lasso_YA, filetype = "pdf", height = 7.5, width = 7.5, filename = "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_adult_ascr_cor_all_network_lasso")
+
+## For replicated strains - N2, CB4856, DL238, JU258
+
+for (i in rep_strains) {
+
+  if (i != "DL238") {
+
+df_rep <- df_ascr_reps_YA  %>%
+  dplyr::filter(strain == i) %>%
+  dplyr::select(ascr_ID, batch, resid) %>%
+  tidyr::spread(batch, resid)
+  
+test_table_YA_rep <- t(df_rep[2:ncol(df_rep)])
+colnames(test_table_YA_rep) <- df_rep[[1]]
+
+test_result_YA_rep <- cor.table(test_table_YA_rep, cor.method="pearson")[[1]]
+
+ggcorrplot(test_result_YA_rep, hc.order = TRUE) + ggtitle(paste("Sync Adult", i, sep = "_"))
+
+ggsave(glue::glue("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20190701_New_adult_ascr_cor_{i}.pdf"), width = 7.5, height = 7.5, units = "in")
+
+Graph_pcor_YA_rep <- qgraph(test_result_YA_rep, graph = "pcor", layout = "spring", labels = colnames(test_table_YA_rep))  #  Unregularized partial correlation network
+qgraph(Graph_pcor_YA_rep, filetype = "pdf", height = 7.5, width = 7.5, filename = glue::glue( "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20190701_New_adult_ascr_cor_{i}_network_pcor"))
+
+#Graph_lasso_YA_rep <- qgraph(test_result_YA_rep, graph = "glasso", layout = "spring", tuning = 0.25, sampleSize = nrow(test_table_YA_rep), labels = colnames(test_table_YA_rep))  # Regularized partial correlation network
+#qgraph(Graph_lasso_YA_rep, filetype = "pdf", height = 7.5, width = 7.5, filename = glue::glue( "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20181115_New_adult_ascr_cor_{i}_network_lasso"))
+
+  }
+
+else {
+  
+df_rep <- df_ascr_reps_YA  %>%
+  dplyr::filter(strain == i) %>%
+  dplyr::select(ascr_ID, batch, resid) %>%
+  tidyr::spread(batch, resid) %>%
+  dplyr::filter(ascr_ID != "hbas#3")
+  
+test_table_YA_rep <- t(df_rep[2:ncol(df_rep)])
+colnames(test_table_YA_rep) <- df_rep[[1]]
+
+test_result_YA_rep <- cor.table(test_table_YA_rep, cor.method="pearson")[[1]]
+
+ggcorrplot(test_result_YA_rep, hc.order = TRUE) + ggtitle(paste("Sync Adult", i, sep = "_"))
+
+ggsave(glue::glue("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20190701_New_adult_ascr_cor_{i}.pdf"), width = 7.5, height = 7.5, units = "in")
+
+Graph_pcor_YA_rep <- qgraph(test_result_YA_rep, graph = "pcor", layout = "spring", labels = colnames(test_table_YA_rep))  #  Unregularized partial correlation network
+qgraph(Graph_pcor_YA_rep, filetype = "pdf", height = 7.5, width = 7.5, filename = glue::glue( "~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Figures/20190701_New_adult_ascr_cor_{i}_network_pcor"))
+  
+} 
+
+}
+
+```
+
+```{r, warning=FALSE, message=FALSE}
+
+  #4. Principal component analysis
+
+ #1) mixed stage
+
+df_PCA_mix <- ascr_mix  %>%
+  dplyr::group_by(ascr_ID, strain) %>%
+  dplyr::summarise(m_abundance = mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::rename(trait = ascr_ID, value = m_abundance)
+
+pcDF_mix <- spread(df_PCA_mix, trait, value)
+pcDF_mix$strain <- as.character(pcDF_mix$strain)
+row.names(pcDF_mix)<-as.character(pcDF_mix$strain)
+strain_mix<-row.names(pcDF_mix)
+pcDF_trim_mix<-pcDF_mix %>%
+  dplyr::select(-strain)
+
+pcDF.fit_scaled_mix <- prcomp(pcDF_trim_mix, scale. = TRUE)
+summary_PCA_mix <- data.frame(PC=1:13, t(summary(pcDF.fit_scaled_mix)[[6]]))
+
+summary_PCA_mix %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=PC, y=Cumulative.Proportion) +
+  ylim(0,1) +
+  theme_bw()
+
+pcs_mix <-pcDF.fit_scaled_mix[[5]]
+pcs_mix <- data.frame(strain_mix, pcs_mix)
+
+pcs_mix %>%
+  ggplot(.) +
+  geom_point() +
+  aes(x=PC1, y=PC2, label=strain_mix) +
+  geom_text_repel(data=subset(pcs_mix, PC1 < -10 | PC2 < -4)) +
+  theme_bw()
+
+#QTL mapping - scaled, remove overlapping isotypes ("JU238", "JU363", "JU1581", "QG537", "QG538", "JU491"), non-wild isolates (CX11400, QG1)
+
+df_GWA_PC_mix <- pcs_mix[1:5] %>%
+  dplyr::rename(strain = strain_mix) %>%
+  dplyr::filter(!strain %in% c("JU238", "JU363", "JU1581", "QG537", "QG538", "CX11400", "JU491", "QG1"))
+
+process_df_PC_mix <- process_pheno(df_GWA_PC_mix)
+mapping_PC_mix <- gwas_mappings(process_df_PC_mix, mapping_snp_set = FALSE)
+process_mapping_PC_mix <- process_mappings(mapping_PC_mix, process_df_PC_mix) %>%
+  dplyr::filter(CHROM != "MtDNA")
+
+manplot(process_mapping_PC_mix)
+
+process_mapping_PC_mix %>%
+na.omit() %>%
+  ggplot(.)+
+  aes(x=factor(as.character(allele),labels = c("REF","ALT")), y = value, fill = factor(as.character(allele),labels = c("REF","ALT")))+
+  geom_jitter(position=position_jitterdodge(jitter.width = 1), alpha = .7)+
+  geom_boxplot(outlier.alpha = 0, alpha = 0.7)+
+  scale_fill_brewer(palette = "Set1") +
+  facet_grid(~marker)+
+  theme_bw()+
+  theme(text = element_text(size=11, color = "black"), axis.title = element_text(size=13, color = "black"), axis.text = element_text(size=11, color = "black"), legend.position = 'none', strip.text = element_text(size=10, color = "black")) +
+  labs(x="", y="Phenotype")
+
+genes_PC_mix <- process_correlations(variant_correlation(process_mapping_PC_mix, condition_trait = F))
+
+genes_summary_PC_mix <- genes_PC_mix %>%
+  dplyr::filter(strain == "N2")
+
+genes_summary_PC_mix  %>% 
+  ggplot(.)+
+  aes(x = POS/1e6, y = -log10(corrected_spearman_cor_p), fill = -log10(corrected_spearman_cor_p))+
+  scale_color_gradient() +
+  geom_point(shape=21, size =1, alpha = .7)+
+  ggplot2::theme_bw() + 
+  ggplot2::theme(axis.text.x = ggplot2::element_text(size = 10, face = "bold", color = "black"),
+                 axis.text.y = ggplot2::element_text(size = 10, face = "bold", color = "black"), 
+                 axis.title.x = ggplot2::element_text(size = 10, face = "bold", color = "black", vjust = -0.3), 
+                 axis.title.y = ggplot2::element_text(size = 8, face = "bold", color = "black"), 
+                 strip.text.x = ggplot2::element_text(size = 10, face = "bold", color = "black"), 
+                 strip.text.y = ggplot2::element_text(size = 10,  face = "bold", color = "black"), 
+                 plot.title = ggplot2::element_text(size = 0,  face = "bold", vjust = 1),
+                 panel.background = ggplot2::element_rect(color = "black",  size = 1.2), 
+                 strip.background = ggplot2::element_rect(color = "black", size = 1.2),
+                 legend.position = 'none')+
+  labs(x = "Genomic Position (Mb)", y = expression(bold(-log[10](bolditalic(p)))))
+
+save(df_GWA_PC_mix, process_df_PC_mix, mapping_PC_mix, process_mapping_PC_mix, genes_PC_mix, file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_New_PC_mix_GWA.RData")
+
+load(file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_New_PC_mix_GWA.RData")
+
+ #2) synchronized YA
+
+df_PCA_YA <- ascr_YA  %>%
+  dplyr::group_by(ascr_ID, strain) %>%
+  dplyr::summarise(m_abundance = mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::rename(trait = ascr_ID, value = m_abundance)
+
+pcDF_YA <- spread(df_PCA_YA, trait, value)
+
+## remove weird X row
+pcDF_YA <- pcDF_YA[1:nrow(pcDF_YA)-1,]
+pcDF_YA$strain <- as.character(pcDF_YA$strain)
+row.names(pcDF_YA)<-as.character(pcDF_YA$strain)
+strain_YA<-row.names(pcDF_YA)
+pcDF_trim_YA<-pcDF_YA %>%
+  dplyr::select(-strain)
+
+pcDF.fit_scaled_YA <- prcomp(pcDF_trim_YA, scale. = TRUE)
+summary_PCA_YA <- data.frame(PC=1:13, t(summary(pcDF.fit_scaled_YA)[[6]]))
+
+summary_PCA_YA %>%
+  ggplot(.) +
+  geom_col() +
+  aes(x=PC, y=Cumulative.Proportion) +
+  ylim(0,1) +
+  theme_bw()
+
+pcs_YA <-pcDF.fit_scaled_YA[[5]]
+pcs_YA <- data.frame(strain_YA, pcs_YA)
+
+pcs_YA %>%
+  ggplot(.) +
+  geom_point() +
+  aes(x=PC1, y=PC2, label=strain_YA) +
+  geom_text_repel(data=subset(pcs_YA, PC1 < -8 | abs(PC2) > 3.8)) +
+  theme_bw()
+
+#QTL mapping - scaled, remove overlapping isotypes ("JU238", "JU363", "JU1581", "QG537", "QG538", "JU491"), non-wild isolates (CX11400, QG1)
+
+df_GWA_PC_YA <- pcs_YA[1:5] %>%
+  dplyr::rename(strain = strain_YA) %>%
+  dplyr::filter(!strain %in% c("JU238", "JU363", "JU1581", "QG537", "QG538", "CX11400", "JU491", "QG1"))
+
+process_df_PC_YA <- process_pheno(df_GWA_PC_YA)
+mapping_PC_YA <- gwas_mappings(process_df_PC_YA, mapping_snp_set = FALSE)
+process_mapping_PC_YA <- process_mappings(mapping_PC_YA, process_df_PC_YA) %>%
+  dplyr::filter(CHROM != "MtDNA")
+
+manplot(process_mapping_PC_YA)
+
+process_mapping_PC_YA %>%
+    #dplyr::filter(trait == "pc4") %>%
+na.omit() %>%
+  ggplot(.)+
+  aes(x=factor(as.character(allele),labels = c("REF","ALT")), y = value, fill = factor(as.character(allele),labels = c("REF","ALT")))+
+  geom_jitter(position=position_jitterdodge(jitter.width = 1), alpha = .7)+
+  geom_boxplot(outlier.alpha = 0, alpha = 0.7)+
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()+
+  facet_grid(~trait)+
+  #facet_wrap(marker~trait)+
+  theme(text = element_text(size=11, color = "black"), axis.title = element_text(size=13, color = "black"), axis.text = element_text(size=11, color = "black"), legend.position = 'none', strip.text = element_text(size=10, color = "black")) +
+  labs(x="", y="Phenotype")
+
+genes_PC_YA <- process_correlations(variant_correlation(process_mapping_PC_YA, condition_trait = F))
+
+genes_summary_PC_YA <- genes_PC_YA %>%
+  dplyr::filter(strain == "N2")
+
+genes_summary_PC_YA  %>%
+  ggplot(.)+
+  aes(x = POS/1e6, y = -log10(corrected_spearman_cor_p), fill = -log10(corrected_spearman_cor_p))+
+  scale_color_gradient() +
+  geom_point(shape=21, size =1, alpha = .7)+
+  ggplot2::theme_bw() + 
+  ggplot2::theme(axis.text.x = ggplot2::element_text(size = 10, face = "bold", color = "black"),
+                 axis.text.y = ggplot2::element_text(size = 10, face = "bold", color = "black"), 
+                 axis.title.x = ggplot2::element_text(size = 10, face = "bold", color = "black", vjust = -0.3), 
+                 axis.title.y = ggplot2::element_text(size = 8, face = "bold", color = "black"), 
+                 strip.text.x = ggplot2::element_text(size = 10, face = "bold", color = "black"), 
+                 strip.text.y = ggplot2::element_text(size = 10,  face = "bold", color = "black"), 
+                 plot.title = ggplot2::element_text(size = 0,  face = "bold", vjust = 1),
+                 panel.background = ggplot2::element_rect(color = "black",  size = 1.2), 
+                 strip.background = ggplot2::element_rect(color = "black", size = 1.2),
+                 legend.position = 'none')+
+  labs(x = "Genomic Position (Mb)", y = expression(bold(-log[10](bolditalic(p))))) +
+  facet_grid(~trait, scale = "free")
+
+save(df_GWA_PC_YA, process_df_PC_YA, mapping_PC_YA, process_mapping_PC_YA, genes_PC_YA, file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_New_PC_YA_GWA.RData")
+
+load(file="~/Dropbox/AndersenLab/LabFolders/PastMembers/Daehan/Pheromone/Dataset_New/20181115_New_PC_YA_GWA.RData")
+
+```
+
+```{r, warning=FALSE, message=FALSE}
+
+  #5. GWAS without outliers - i) each ascaroside ii) pairwise ratio / prepare tsv table for nextflow
+
+  #1) mixed stage - remove overlapping isotypes ("JU238", "JU363", "JU1581", "QG537", "QG538", "JU491"), non-wild isolates (CX11400, QG1)
+
+df_ascr_mix <- ascr_mix %>%
+  dplyr::group_by(ascr_ID, strain) %>%
+  dplyr::summarise(m_abundance = mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(!strain %in% c("JU238", "JU363", "JU1581", "QG537", "QG538", "CX11400", "JU491", "QG1"))
+
+ratio <- data.frame(combn(as.character(unique(df_ascr_mix$ascr_ID)),m=2))
+
+ratio_list_mix<-list()
+
+for (i in 1:ncol(ratio)) {
+  as1 <- dplyr::filter(df_ascr_mix,ascr_ID==as.character(ratio[1,i]))%>%
+    rename(as1 = ascr_ID,amount1 = m_abundance)
+  as2 <- dplyr::filter(df_ascr_mix,ascr_ID==as.character(ratio[2,i]))%>%
+    rename(as2 = ascr_ID,amount2 = m_abundance)
+  comb.as <- left_join(as1,as2,by="strain")%>%
+    dplyr::mutate(as.ratio1= amount1/amount2,
+                  as.ratio2= amount2/amount1)%>%
+    dplyr::select(strain, as.ratio1, as.ratio2)
+  
+  colnames(comb.as) <- c("strain",
+                         paste(as.character(ratio[1,i]),as.character(ratio[2,i]),sep=""),
+                         paste(as.character(ratio[2,i]),as.character(ratio[1,i]),sep=""))
+  as.ratio.long <- tidyr::gather(comb.as,trait,value,-strain)
+  ratio_list_mix[[i]] <- as.ratio.long
+  }
+
+all_ratio_mix <- bind_rows(ratio_list_mix)
+
+df_ascr_mix_rename <- df_ascr_mix %>%
+  dplyr::rename(trait = ascr_ID, value = m_abundance) %>%
+  dplyr::select(strain, trait, value)
+
+df_all_traits_mix <- rbind(df_ascr_mix_rename, all_ratio_mix)
+
+df_all_traits_mix$trait <- sub("_Glu", "", df_all_traits_mix$trait)
+df_all_traits_mix$trait <- paste(df_all_traits_mix$trait, "mix", sep="")
+
+df_all_traits_mix_wide <- tidyr::spread(df_all_traits_mix,trait,value)
+
+write.table(df_all_traits_mix_wide, file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_ascr_all_traits_mix.tsv")
+
+## split all the file
+
+trait_label <- as.character(unique(df_all_traits_mix$trait))
+
+for(trait in trait_label) {
+  
+  t_df <- data.frame(strain = df_all_traits_mix_wide$strain,
+                     trait = df_all_traits_mix_wide[,trait])
+  
+  colnames(t_df) <- c("strain", trait)
+  
+  readr::write_tsv(t_df, 
+                   path = glue::glue("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/ascr_trait_tsv_mixed/{trait}.tsv"),
+                   col_names = T)
+}
+
+
+  #2) synchronized YA - remove overlapping isotypes ("JU238", "JU363", "JU1581", "QG537", "QG538", "JU491"), non-wild isolates (CX11400, QG1)
+
+df_ascr_YA <- ascr_YA %>%
+  dplyr::group_by(ascr_ID, strain) %>%
+  dplyr::summarise(m_abundance = mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(!strain %in% c("JU238", "JU363", "JU1581", "QG537", "QG538", "CX11400", "JU491", "QG1"))
+
+ratio <- data.frame(combn(as.character(unique(df_ascr_YA$ascr_ID)),m=2))
+
+ratio_list_YA<-list()
+
+for (i in 1:ncol(ratio)) {
+  as1 <- dplyr::filter(df_ascr_YA,ascr_ID==as.character(ratio[1,i]))%>%
+    rename(as1 = ascr_ID,amount1 = m_abundance)
+  as2 <- dplyr::filter(df_ascr_YA,ascr_ID==as.character(ratio[2,i]))%>%
+    rename(as2 = ascr_ID,amount2 = m_abundance)
+  comb.as <- left_join(as1,as2,by="strain")%>%
+    dplyr::mutate(as.ratio1= amount1/amount2,
+                  as.ratio2= amount2/amount1)%>%
+    dplyr::select(strain, as.ratio1, as.ratio2)
+  
+  colnames(comb.as) <- c("strain",
+                         paste(as.character(ratio[1,i]),as.character(ratio[2,i]),sep=""),
+                         paste(as.character(ratio[2,i]),as.character(ratio[1,i]),sep=""))
+  as.ratio.long <- tidyr::gather(comb.as,trait,value,-strain)
+  ratio_list_YA[[i]] <- as.ratio.long
+  }
+
+all_ratio_YA <- bind_rows(ratio_list_YA)
+
+df_ascr_YA_rename <- df_ascr_YA %>%
+  dplyr::rename(trait = ascr_ID, value = m_abundance) %>%
+  dplyr::select(strain, trait, value)
+
+df_all_traits_YA <- rbind(df_ascr_YA_rename, all_ratio_YA)
+
+df_all_traits_YA$trait <- sub("_Glu", "", df_all_traits_YA$trait)
+df_all_traits_YA$trait <- paste(df_all_traits_YA$trait, "A", sep="")
+
+df_all_traits_YA_wide <- tidyr::spread(df_all_traits_YA,trait,value)
+
+write.table(df_all_traits_YA_wide, file="~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/20181115_ascr_all_traits_A.tsv")
+
+## split all the file
+
+trait_label <- as.character(unique(df_all_traits_YA$trait))
+
+for(trait in trait_label) {
+  
+  t_df <- data.frame(strain = df_all_traits_YA_wide$strain,
+                     trait = df_all_traits_YA_wide[,trait])
+  
+  colnames(t_df) <- c("strain", trait)
+  
+  readr::write_tsv(t_df, 
+                   path = glue::glue("~/Dropbox/AndersenLab/LabFolders/Daehan/Pheromone/Dataset_New/ascr_trait_tsv_YA/{trait}.tsv"),
+                   col_names = T)
+}
+
+
+```
+
+```{r, warning=FALSE, message=FALSE}
+
+  #6. specific ascaroside analysis - e.g) icas missing strains
+
+df_adult_ascrd <- ascr_YA %>%
+  dplyr::group_by(ascr_ID, feature_id, strain) %>%
+  dplyr::summarise(abundance=mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(abundance < 5000)
+
+df_adult_ascrd %>%
+  #dplyr::filter(ascr_ID != "mbas3") %>%
+  ggplot(.) +
+  geom_bar() +
+  aes(x=ascr_ID, fill = strain) +
+  theme_bw()
+
+df_mix_ascrd <- ascr_mix %>%
+  dplyr::group_by(ascr_ID, feature_id, strain) %>%
+  dplyr::summarise(abundance=mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(abundance < 5000)
+
+df_mix_ascrd %>%
+  ggplot(.) +
+  geom_bar() +
+  aes(x=ascr_ID, fill = strain) +
+  theme_bw()
+
+## JU1400 minimum plot
+
+df_adult_JU1400 <- ascr_YA %>%
+  dplyr::filter(strain != "X") %>%
+  dplyr::group_by(ascr_ID, feature_id, strain) %>%
+  dplyr::summarise(abundance=mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(ascr_ID) %>%
+  dplyr::mutate(min=min(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(abundance == min)
+
+df_adult_JU1400 %>%
+  ggplot(.) +
+  geom_bar() +
+  aes(x=ascr_ID, fill = strain) +
+  theme_bw()
+
+df_mix_JU1400 <- ascr_mix %>%
+  dplyr::group_by(ascr_ID, feature_id, strain) %>%
+  dplyr::summarise(abundance=mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(ascr_ID) %>%
+  dplyr::mutate(min=min(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(abundance == min)
+
+df_mix_JU1400 %>%
+  ggplot(.) +
+  geom_bar() +
+  aes(x=ascr_ID, fill = strain) +
+  theme_bw()
+
+
+df_adult_icas <- ascr_YA %>%
+  dplyr::group_by(ascr_ID, feature_id, strain) %>%
+  dplyr::summarise(abundance=mean(abundance)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(ascr_ID %in% c("icas3", "icas9"), strain != "X") %>%
+  dplyr::mutate(stage = "adult") %>%
+  dplyr::rename(isotype=strain) %>%
+  dplyr::arrange(abundance)
+
+##haplotype analysis
+
+load(file="~/Dropbox/AndersenLab/LabFolders/Daehan/haplotype/processed_haps.Rda")
+
+df_hap <- processed_haps[[3]] %>%
+  dplyr::rename(isotype=haplotype,
+                haplotype=value)
+
+#joining
+
+hap_joined <- df_hap %>%
+  dplyr::left_join(., df_adult_icas, by="isotype") %>%
+  dplyr::filter(!is.na(abundance)) %>%
+  dplyr::group_by(start,stop,haplotype, ascr_ID) %>%
+  dplyr::mutate(mean = mean(abundance)) %>%
+  dplyr::ungroup()
+
+hap_joined_icasx <- hap_joined %>%
+  dplyr::filter(mean == 0) %>%
+  dplyr::group_by(ascr_ID, start,stop,haplotype) %>%
+  dplyr::mutate(n_hap = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(n_hap>1) 
+
+hap_icasx <- unique(hap_joined_icasx$haplotype)
+
+hap_joined_icasx %>%
+  dplyr::distinct(ascr_ID, chromosome, start, stop, haplotype) %>%
+  ggplot(.) +
+  geom_histogram() +
+  aes(x=start/1e6, fill = haplotype) +
+  scale_fill_brewer(palette = "Paired", na.value="black") +
+  facet_grid(ascr_ID~chromosome, scale = 'free') +
+  theme_bw()
+
+hap_joined_icasx %>%
+  ggplot(.) +
+  geom_point(alpha = 0.6) +
+  aes(x=(start+stop)/2e6, color=haplotype, y = isotype) +
+  scale_color_brewer(palette = "Paired", na.value="black") +
+  facet_grid(ascr_ID~chromosome) +
+  theme_bw() +
+  xlim(0,20) +
+  labs(x="Genomic position (Mb)", y="isotype", fill = "haplotype")
+
+## icas#3
+
+hap_joined_icasx %>%
+  dplyr::filter(ascr_ID == "icas3", n_hap > 2) %>%
+  ggplot(.) +
+  geom_point(alpha = 1) +
+  aes(x=(start+stop)/2e6, color=haplotype, y = isotype) +
+  scale_color_brewer(palette = "Paired", na.value="black") +
+  facet_grid(haplotype~chromosome) +
+  theme_bw() +
+  xlim(0,20) +
+  labs(x="Genomic position (Mb)", y="isotype", fill = "haplotype") +
+  ggtitle("icas#3 (n_hap >= 3)")
+
+## icas#9
+
+hap_joined_icasx %>%
+  dplyr::filter(ascr_ID == "icas9") %>%
+  ggplot(.) +
+  geom_point(alpha = 1) +
+  aes(x=(start+stop)/2e6, color=haplotype, y = isotype) +
+  scale_color_brewer(palette = "Paired", na.value="black") +
+  facet_grid(haplotype~chromosome) +
+  theme_bw() +
+  xlim(0,20) +
+  labs(x="Genomic position (Mb)", y="isotype", fill = "haplotype") +
+  ggtitle("icas#9 (n_hap >= 2)")
+
+```
